@@ -1,0 +1,5 @@
+ term.setTextColor(colors.blue)
+print[[ help - This command will give you a list of commands
+ exit - This command will allow yout to exit this program
+ on - Activate Lights
+ off - Deactivate Lights]]

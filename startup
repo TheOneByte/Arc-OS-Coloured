@@ -1,0 +1,239 @@
+uname = "root"
+pword = "123456"
+local side = "left"
+
+function os.pullEvent()
+local event, p1, p2, p3, p4, p5 = os.pullEventRaw()
+if event == "terminate" then
+end
+return event, p1, p2, p3, p4, p5
+end
+
+sleep (0.5)
+bground = paintutils.loadImage(".background")
+paintutils.drawImage(bground,1,1)
+term.setCursorPos(1,1)
+term.setTextColor(colors.orange)
+print("Loading System Please Wait")
+sleep(0.25)
+
+term.clear()
+bground = paintutils.loadImage(".background")
+paintutils.drawImage(bground,1,1)
+term.setCursorPos(1,1)
+term.setTextColor(colors.orange)
+print("Loading System Please Wait.")
+sleep(0.25)
+
+term.clear()
+bground = paintutils.loadImage(".background")
+paintutils.drawImage(bground,1,1)
+term.setCursorPos(1,1)
+term.setTextColor(colors.orange)
+print("Loading System Please Wait..")
+sleep(0.25)
+
+term.clear()
+bground = paintutils.loadImage(".background")
+paintutils.drawImage(bground,1,1)
+term.setCursorPos(1,1)
+term.setTextColor(colors.orange)
+print("Loading System Please Wait...")
+sleep(0.25)
+
+term.clear()
+bground = paintutils.loadImage(".background")
+paintutils.drawImage(bground,1,1)
+term.setCursorPos(1,1)
+term.setTextColor(colors.orange)
+print("Loading System Please Wait....")
+sleep(0.25)
+
+term.clear()
+bground = paintutils.loadImage(".background")
+paintutils.drawImage(bground,1,1)
+term.setCursorPos(1,1)
+term.setTextColor(colors.orange)
+print("Loading System Please Wait.....")
+sleep(0.25)
+
+term.clear()
+bground = paintutils.loadImage(".background")
+paintutils.drawImage(bground,1,1)
+term.setCursorPos(1,1)
+term.setTextColor(colors.orange)
+print("Loading System Please Wait......")
+sleep(0.25)
+
+term.clear()
+bground = paintutils.loadImage(".background")
+paintutils.drawImage(bground,1,1)
+term.setCursorPos(1,1)
+term.setTextColor(colors.orange)
+print("Loading System Please Wait.......")
+sleep(0.25)
+
+term.clear()
+bground = paintutils.loadImage(".background")
+paintutils.drawImage(bground,1,1)
+term.setCursorPos(1,1)
+term.setTextColor(colors.orange)
+print("Loading System Please Wait........")
+sleep(0.25)
+
+term.clear()
+bground = paintutils.loadImage(".background")
+paintutils.drawImage(bground,1,1)
+term.setCursorPos(1,1)
+term.setTextColor(colors.orange)
+print("Loading System Please Wait.........")
+sleep(0.25)
+
+term.clear()
+bground = paintutils.loadImage(".background")
+paintutils.drawImage(bground,1,1)
+term.setCursorPos(1,1)
+term.setTextColor(colors.orange)
+print("Loading System Please Wait..........")
+sleep(0.25)
+
+term.clear()
+bground = paintutils.loadImage(".background")
+paintutils.drawImage(bground,1,1)
+term.setCursorPos(1,1)
+term.setTextColor(colors.orange)
+print("Loading Shell")
+sleep(0.25)
+
+term.clear()
+bground = paintutils.loadImage(".background")
+paintutils.drawImage(bground,1,1)
+term.setCursorPos(1,1)
+term.setTextColor(colors.orange)
+print("Loading Shell.")
+sleep(0.25)
+
+term.clear()
+bground = paintutils.loadImage(".background")
+paintutils.drawImage(bground,1,1)
+term.setCursorPos(1,1)
+term.setTextColor(colors.orange)
+print("Loading Shell..")
+sleep(0.25)
+
+term.clear()
+bground = paintutils.loadImage(".background")
+paintutils.drawImage(bground,1,1)
+term.setCursorPos(1,1)
+term.setTextColor(colors.orange)
+print("Loading Shell...")
+sleep(0.25)
+
+term.clear()
+bground = paintutils.loadImage(".background")
+paintutils.drawImage(bground,1,1)
+term.setCursorPos(1,1)
+term.setTextColor(colors.orange)
+print("Loading Boot")
+sleep(0.25)
+
+term.clear()
+bground = paintutils.loadImage(".background")
+paintutils.drawImage(bground,1,1)
+term.setCursorPos(1,1)
+term.setTextColor(colors.orange)
+print("Loading Boot.")
+sleep(0.25)
+
+term.clear()
+bground = paintutils.loadImage(".background")
+paintutils.drawImage(bground,1,1)
+term.setCursorPos(1,1)
+term.setTextColor(colors.orange)
+print("Loading Boot..")
+sleep(0.25)
+
+term.clear()
+bground = paintutils.loadImage(".background")
+paintutils.drawImage(bground,1,1)
+term.setCursorPos(1,1)
+term.setTextColor(colors.orange)
+print("Loading Boot...")
+sleep(0.25)
+
+term.clear()
+bground = paintutils.loadImage(".background")
+paintutils.drawImage(bground,1,1)
+term.setCursorPos(1,1)
+term.setTextColor(colors.orange)
+print("Loading Programs")
+sleep(0.25)
+
+term.clear()
+bground = paintutils.loadImage(".background")
+paintutils.drawImage(bground,1,1)
+term.setCursorPos(1,1)
+term.setTextColor(colors.orange)
+print("Loading Programs.")
+sleep(0.25)
+
+term.clear()
+bground = paintutils.loadImage(".background")
+paintutils.drawImage(bground,1,1)
+term.setCursorPos(1,1)
+term.setTextColor(colors.orange)
+print("Loading Programs..")
+sleep(0.25)
+
+term.clear()
+bground = paintutils.loadImage(".background")
+paintutils.drawImage(bground,1,1)
+term.setCursorPos(1,1)
+term.setTextColor(colors.orange)
+print("Loading Programs...")
+sleep(0.25)
+
+term.clear()
+term.setCursorPos(1,1)
+term.setTextColor(colors.red)
+
+print '                   ------------'
+print '                      Arc OS   '
+print '                   ------------'
+
+term.setTextColor(colors.yellow)
+write("Username: ")
+username = read()
+if username == (uname) then
+sleep(1)
+
+term.clear()
+term.setCursorPos(1,1)
+term.setTextColor(colors.red)
+
+print '                   ------------'
+print '                      Arc OS   '
+print '                   ------------'
+
+term.setTextColor(colors.yellow)
+write("Password: ")
+password = read("*")
+
+if password == (pword) then
+sleep(0.75)
+term.clear()
+term.setCursorPos(1,1)
+print("Welcome Back User!")
+shell.run("boot")
+
+else
+print("Incorrect Password! Shutting Down System...!")
+sleep(2)
+shell.run("startup")
+end
+
+else
+print("Incorrect Usrername! Shuttdown Down System...!")
+sleep(2)
+shell.run("startup")
+end

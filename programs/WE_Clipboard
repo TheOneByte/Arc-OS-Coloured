@@ -1,0 +1,397 @@
+--The filesizes will scare me...
+
+--Immibis's NBT api for the next 140 lines...
+
+local function nbtToTable(typ,val)
+  if typ=="compound" then
+    local rv={}
+    for _,key in ipairs(val.getKeys()) do
+      local typ2,val2=val.getValue(key)
+      rv[key]=nbtToTable(typ2,val2)
+    end
+    return {type="compound",value=rv}
+  elseif typ=="list" then
+    local n=val.getSize()
+    local rv={}
+    for k=0,n-1 do
+      local typ2,val2=val.get(k)
+      rv[k+1]=nbtToTable(typ2,val2)
+    end
+    return {type="list",value=rv}
+  elseif typ=="string" or typ=="double" or typ=="float" or typ=="byte" or typ=="short" or typ=="int" or typ=="long" then
+    return {type=typ,value=val}
+  elseif typ=="intArray" or typ=="byteArray" then
+    local rv={}
+    for k=0,val.getLength()-1 do
+      rv[k+1]=val.get(k)
+    end
+    return {type=typ,value=rv}
+  else
+    error("unimplemented tag type: "..typ)
+  end
+end
+     
+local function tableToNbt(typ,tag,tbl)
+  assert(type(tag)=="table" and tbl.type==typ and tag.getType()==typ)
+  if typ=="compound" then
+    for _,key in ipairs(tag.getKeys()) do
+      if not tbl.value[key] then
+        tag.remove(key)
+      end
+    end
+    for key,value in pairs(tbl.value) do
+      if value.type=="compound" or value.type=="list" then
+        tag.setValue(key,value.type)
+        tableToNbt(value.type,select(2,tag.getValue(key)),value)
+      elseif value.type=="intArray" or value.type=="byteArray" then
+        tag.setValue(key,value.type,#value.value)
+        tableToNbt(value.type,select(2,tag.getValue(key)),value)
+      elseif value.type=="string" or value.type=="double" or value.type=="float" or value.type=="byte" or value.type=="short" or value.type=="int" then
+        tag.setValue(key,value.type,value.value)
+      elseif value.type=="long" then
+        tag.setValue(key,value.type,value.value[1],value.value[2])
+      else
+        error("unimplemented tag type: "..value.type)
+      end
+    end
+  elseif typ=="list" then
+    while tag.getSize()>0 do
+      tag.remove(0)
+    end
+    for _,value in ipairs(tbl.value) do
+      if value.type=="compound" or value.type=="list" then
+        tag.add(tag.getSize(),value.type)
+        tableToNbt(value.type,select(2,tag.get(tag.getSize()-1)),value)
+      elseif value.type=="intArray" or value.type=="byteArray" then
+        tag.add(tag.getSize(),value.type,#value.value)
+        tableToNbt(value.type,select(2,tag.get(tag.getSize()-1)),value)
+      elseif value.type=="string" or value.type=="double" or value.type=="float" or value.type=="byte" or value.type=="short" or value.type=="int" then
+        tag.add(tag.getSize(),value.type,value.value)
+      elseif value.type=="long" then
+        tag.add(tag.getSize(),value.type,value.value[1],value.value[2])
+      else
+        error("unimplemented tag type: "..value.type)
+      end
+    end
+  elseif typ=="intArray" or typ=="byteArray" then
+    for k=0,tag.getLength()-1 do
+      tag.set(k,tbl.value[k+1])
+    end
+  else
+    error("unimplemented tag type: "..typ)
+  end
+end
+
+local function readTileNBT(te)
+  te.readNBT()
+  return nbtToTable("compound",te.getNBT())
+end
+     
+local function writeTileNBT(te,nbt)
+  te.readNBT() --This is the only line of code I changed. I added this line and changed the spacing to two spaces instead of four.
+  --Without this line, the function does not work as intended.
+  tableToNbt("compound",te.getNBT(),nbt)
+  te.writeNBT()
+end
+
+--And here begins my code!
+
+local f=fs.open("rom/help/changelog","r")
+local str=f.readAll()
+f.close()
+f=nil
+local useNBT=str:find("ComputerCraft 1.64")==nil --or str:find("ComputerCraft 1.XX")~=nil --if it's ever fixed.
+clipboard={} --Holds the functions, clipboard.copy, clipboard.paste, etc.
+Clipboard=Clipboard or {} --The clipboard which holds the blocks
+Clipboard[1]=Clipboard[1] or {}
+local directions={"down","up","north","south","east","west","self"}
+function clipboard.copy(NoOutput,beingReused) --http://wiki.sk89q.com/wiki/WorldEdit/Clipboard#Copying_and_cutting
+  if not NoOutput then
+    sendChat("Copying...")
+  end
+  if not beingReused then
+    px,py,pz=getPlayerPos(username)
+    px,py,pz=math.floor(px,py,pz)
+  end
+  Clipboard.ox=px --Original coords of the player at the time of the copying
+  Clipboard.oy=py
+  Clipboard.oz=pz
+  if #Selection>0 then
+    for i=1,#Selection do --Go through all of the blocks in the selection...
+      if not Clipboard[i] then
+        Clipboard[i]={}
+      end
+      Clipboard[i].x=Selection[i].x --Integers play much nicer.
+      Clipboard[i].y=Selection[i].y
+      Clipboard[i].z=Selection[i].z
+      Clipboard[i].ID=getBlockID(Clipboard[i].x,Clipboard[i].y,Clipboard[i].z)
+      Clipboard[i].Meta=getMetadata(Clipboard[i].x,Clipboard[i].y,Clipboard[i].z)
+      if useNBT and w.getTileEntity(Clipboard[i].x,Clipboard[i].y,Clipboard[i].z) then --If there is any NBT, store it.
+        Clipboard[i].NBT=readTileNBT(w.getTileEntity(Clipboard[i].x,Clipboard[i].y,Clipboard[i].z))
+      end
+    end
+  end
+  local ClipboardDir="WE/Clipboard"
+  if fs.exists(ClipboardDir) then 
+    fs.delete(ClipboardDir)
+  end
+  local f=fs.open(ClipboardDir,"w")
+  f.write(textutils.serialize(Clipboard))
+  f.close()
+  if not NoOutput then
+    sendChat("Area copied.")
+  end
+end
+
+--http://wiki.sk89q.com/wiki/WorldEdit/Clipboard#Pasting
+function clipboard.paste(beingReused)
+  local count=0
+  local count2=0
+  local iterations=0
+  local Num=0
+  local flags={none=0,a=1,ao=2,both=3} --a means without pasting air blocks, ao means At Origin, at the origin of the paste (Where it was copied from).
+  if not beingReused then
+    if #stringx.split(message," ")>2 then
+    	sendChat("Syntax: paste [-a] [-ao]")
+    	return false
+    end
+    if message:gsub("-ao","")==message then
+      if message:gsub("-ao",""):gsub("-a","")==message then
+        Num=flags.none
+      else
+        Num=flags.a
+      end
+      px,py,pz=getPlayerPos(username)
+    else
+      if message:gsub("-ao",""):gsub("-a","")==message:gsub("-ao","") then
+        Num=flags.ao
+      else
+        Num=flags.both
+      end
+    end
+  else
+    Num=flags.none
+  end
+  if Clipboard and Clipboard[1].x then
+    sendChat("Pasting...")
+    for i=1,#Clipboard do
+      count=count+1
+      if count>=25000 then
+        count=0
+        sleep(0.05)
+        count2=count2+1
+      elseif count2>=6 then
+        count2=0
+        sleep(0.05)
+      end
+      local currentX,currentY,currentZ
+      if Num==flags.none then
+        currentX,currentY,currentZ=px+Clipboard[i].x-Clipboard.ox,py+Clipboard[i].y-Clipboard.oy,pz+Clipboard[i].z-Clipboard.oz --Coords relative to the player
+        if not hasChatBox then
+          blockChanged=BlockHasChanged(currentX,currentY,currentZ,Clipboard[i].ID,Clipboard[i].Meta)
+          setBlock(currentX,currentY,currentZ,Clipboard[i].ID,Clipboard[i].Meta)
+        elseif hasChatBox then
+          blockChanged=setBlock(currentX,currentY,currentZ,Clipboard[i].ID,Clipboard[i].Meta)
+        end
+        iterations=iterations+((blockChanged and 1) or 0)
+      elseif Num==flags.a then
+        if Clipboard[i].ID~=0 then --If the block in the clipboard isn't air...
+          currentX,currentY,currentZ=px+Clipboard[i].x-Clipboard.ox,py+Clipboard[i].y-Clipboard.oy,pz+Clipboard[i].z-Clipboard.oz --Coords relative to the player
+          if not hasChatBox then
+            blockChanged=BlockHasChanged(currentX,currentY,currentZ,Clipboard[i].ID,Clipboard[i].Meta)
+            setBlock(currentX,currentY,currentZ,Clipboard[i].ID,Clipboard[i].Meta)
+          elseif hasChatBox then
+            blockChanged=setBlock(currentX,currentY,currentZ,Clipboard[i].ID,Clipboard[i].Meta)
+          end
+          iterations=iterations+((blockChanged and 1) or 0)
+        end
+      elseif Num==flags.ao then
+        currentX,currentY,currentZ=(Clipboard[i].x-Clipboard.ox)+Clipboard.ox,(Clipboard[i].y-Clipboard.oy)+Clipboard.oy,(Clipboard[i].z-Clipboard.oz)+Clipboard.oz --Original coords from the clipboard
+        if not hasChatBox then
+          blockChanged=BlockHasChanged(currentX,currentY,currentZ,Clipboard[i].ID,Clipboard[i].Meta)
+          setBlock(currentX,currentY,currentZ,Clipboard[i].ID,Clipboard[i].Meta)
+        elseif hasChatBox then
+          blockChanged=setBlock(currentX,currentY,currentZ,Clipboard[i].ID,Clipboard[i].Meta)
+        end
+        iterations=iterations+((blockChanged and 1) or 0)
+      elseif Num==flags.both then
+        if Clipboard[i].ID~=0 then --If the block in the clipboard isn't air...
+          currentX,currentY,currentZ=(Clipboard[i].x-Clipboard.ox)+Clipboard.ox,(Clipboard[i].y-Clipboard.oy)+Clipboard.oy,(Clipboard[i].z-Clipboard.oz)+Clipboard.oz --Original coords from the clipboard
+          if not hasChatBox then
+            blockChanged=BlockHasChanged(currentX,currentY,currentZ,Clipboard[i].ID,Clipboard[i].Meta)
+            setBlock(currentX,currentY,currentZ,Clipboard[i].ID,Clipboard[i].Meta)
+          elseif hasChatBox then
+            blockChanged=setBlock(currentX,currentY,currentZ,Clipboard[i].ID,Clipboard[i].Meta)
+          end
+          iterations=iterations+((blockChanged and 1) or 0)
+        end
+      end
+      if useNBT and Clipboard[i].NBT then --If the block in the clipboard has NBT data and NBT support works
+        for k,v in pairs(Clipboard[i]) do
+          if k=="NBT" then
+            v.value.x.value,v.value.y.value,v.value.z.value=math.floor(currentX,currentY,currentZ) --Change the coords in the NBT data to the new coordinates
+          end
+        end
+        writeTileNBT(w.getTileEntity(currentX,currentY,currentZ),Clipboard[i].NBT) --Write the NBT to the block it's supposed to be on.
+      end
+    end
+  else
+    sendChat("Copy something first!")
+    return false
+  end
+  sendChat(iterations.." blocks changed in "..getSleepTime(count,count2).." seconds.")
+  return true
+end
+
+--http://wiki.sk89q.com/wiki/WorldEdit/Features#History
+
+function clipboard.cut(NoOutput) --http://wiki.sk89q.com/wiki/WorldEdit/Clipboard#Copying_and_cutting
+  clipboard.copy(false,true) --Reusing functions makes this much easier. Set it so it won't say "Area Copied", but will say everything else.
+  Blocks2={0}
+  Meta2={0} --Make sure it's ONLY setting air, and nothing else.
+  Percentages={100}
+  TotalPercent=0 --Tell it there are no percentages.
+  sel.set(true)
+  if not NoOutput then
+    sendChat("Area Cut.")
+  end
+end
+
+function clipboard.move() --http://wiki.sk89q.com/wiki/WorldEdit/Region_operations#Moving
+  local args=message:sub(5)
+  sendChat("Don't move.")
+  px,py,pz=getPlayerPos(username)
+  for i=1,#directions do
+  	if args:gsub(directions[i],"")~=args then
+  		Direction=directions[i]
+  		args=args:gsub(directions[i],"")
+  		break
+  	end
+  end
+  if not Direction or Direction=="" or Direction=="self" then
+    Direction=getDirection(true)
+    if not Direction then return end
+  end
+  local tmpClipboard={}
+  if Direction then
+    local tx,ty,tz=px,py,pz --temporary storage for the player location
+    tmpClipboard=table.copy(Clipboard)
+    clipboard.cut(true) --Reusing functions makes this much easier. Set it so it won't say "Area Cut", but will say everything else.
+    if Direction=="east" then
+      px=px+tonumber(args)
+    elseif Direction=="west" then
+      px=px-tonumber(args)
+    elseif Direction=="north" then
+      pz=pz-tonumber(args)
+    elseif Direction=="south" then
+      pz=pz+tonumber(args)
+    elseif Direction=="up" then
+      py=py+tonumber(args)
+    elseif Direction=="down" then
+      py=py-tonumber(args)
+    else
+      error("I screwed up the direction function. Tell me how you made this bug happen on the forum thread!")
+    end
+  end
+  clipboard.paste(true)
+  Clipboard=tmpClipboard
+  tmpClipboard=nil
+  px,py,pz=tx,ty,tz
+  tx,ty,tz=nil,nil,nil
+  Direction=nil
+  sendChat("Selection moved.")
+end
+
+
+function clipboard.stack() --http://wiki.sk89q.com/wiki/WorldEdit/Region_operations#Stacking
+  local tmpClipboard={}
+  sendChat("Don't move.")
+  tmpClipboard=table.copy(Clipboard)
+  px,py,pz=getPlayerPos(username)
+  clipboard.copy(false,true)
+  local args=message:sub(6)
+  for i=1,#directions do
+  	if args:gsub(directions[i],"")~=args then
+  		Direction=directions[i]
+  		args=args:gsub(directions[i],"")
+  		break
+  	end
+  end
+  if not Direction or Direction=="" or Direction=="self" then
+    Direction=getDirection(true)
+    if not Direction then return end
+  end
+  if Direction then
+    local tx,ty,tz=px,py,pz --temporary storage for the player location
+    for i=1,tonumber(args) do
+      if Direction=="east" then
+        px=px+(math.max(x1,x2)-math.min(x1,x2)+1) --The equation gets the size of the selection in that dimension then moves the area operated upon accordingly (since it uses the player's position, that is edited, but the original is restored after the command finishes)
+      elseif Direction=="west" then
+        px=px-(math.max(x1,x2)-math.min(x1,x2)+1)
+      elseif Direction=="north" then
+        pz=pz-(math.max(z1,z2)-math.min(z1,z2)+1)
+      elseif Direction=="south" then
+        pz=pz+(math.max(z1,z2)-math.min(z1,z2)+1)
+      elseif Direction=="up" then
+        py=py+(math.max(y1,y2)-math.min(y1,y2)+1)
+      elseif Direction=="down" then
+        py=py-(math.max(y1,y2)-math.min(y1,y2)+1)
+      else
+        error("I screwed up the direction function. Tell me how you made this bug happen on the forum thread!")
+      end
+      clipboard.paste(true)
+    end
+  end
+  Clipboard=tmpClipboard
+  tmpClipboard=nil
+  Direction=nil
+  px,py,pz=tx,ty,tz
+  sendChat("Selection stacked.")
+end
+
+function clipboard.save()
+  Name=OriginalMessage:sub(6):gsub(" ","_")
+  local allowOverwriting=false
+  if Name:gsub("-o","")~=Name then
+  	allowOverwriting=true
+  end
+  if Clipboard and #Clipboard>0 then
+    if not fs.exists("WE/Schematics/"..Name) or allowOverwriting then
+      local f=fs.open("WE/Schematics/"..Name,"w")
+      f.write(textutils.serialize(Clipboard))
+      f.close()
+    else
+      sendChat("That name is already used. Run with the -o flag to allow overwriting.")
+      return false
+    end
+  else
+    sendChat("You need to have something in your clipboard first!")
+    return false
+  end
+  sendChat("Build Saved.")
+  return true
+end
+
+function clipboard.load()
+  local dir=message:sub(6)
+  local default=false
+  if dir==nil or dir=="" then
+    dir="WE/Clipboard"
+    default=true
+  end
+  if (fs.exists(dir) and default) or fs.exists("WE/Schematics/"..dir) then
+    local f
+    if not default then
+      f=fs.open("WE/Schematics/"..dir,"r")
+    else
+      f=fs.open(dir,"r")
+    end
+    Clipboard=textutils.unserialize(f.readAll())
+    f.close()
+    sendChat("Clipboard loaded.")
+    return true
+  else
+    sendChat("That clipboard does not exist!")
+    return false
+  end
+end

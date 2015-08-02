@@ -1,0 +1,239 @@
+function argError(...) --Returns error text if any of the arguments are nil. Pass it your command's arguments.
+  for k,v in pairs({...}) do
+    if v==nil then
+      return "Argument "..k.." is nil."
+    end
+  end
+end
+
+function typeError(args,types) --Returns error text if the arg(s) in the table are not of the type(s) in the types table.
+--A few quirks:
+--nil is a type with only one value: nil. So, argError is basically the same as typeError({arg(s)},"nil").
+--It can check multiple types for each argument as so: "typeError({arg1,arg2,arg3},{{"string","number"},"thread",{"number","nil"}})"
+--If you check, for example, arguments 1,2, and 4, in order for the text to be correct, use "typeError({arg1,arg2,[4]=arg4},type(s))"
+--It supports strings or tables, so {"number"} or {{"thread","function"},"string"} would work.
+--typeError(arg,type(s)) (type(s) can be a string or a table) will work as long as arg isn't a table.
+  if type(args)~="table" then
+    if type(types)=="string" and type(args)~=types then
+      return "Argument 1 should be of type \""..types.."\", was type \""..type(args).."\""
+    elseif type(types)=="table" then
+      for i=1,#types do
+        if type(args)==types[i] then
+          break
+        elseif i==#types[k] then
+          return "Argument "..k.." should be of type \""..table.concat(types,"\" or \"").."\", was type \""..type(args).."\""
+        end
+      end
+    elseif type(args)~=types and types~=nil then
+      return "Argument "..k.." should be of type \""..types.."\", was type \""..type(args).."\""
+    else
+      return "Argument 2 to typeError() needs to be type(s) as a string! (typeError(arg,\"nil\"), not typeError(arg,nil))"
+    end
+  elseif type(args)=="table" then
+    for k,v in pairs(args) do
+      if type(types)=="table" then
+        if type(types[k])=="table" then
+          for i=1,#types[k] do
+            if type(v)==types[k][i] then
+              break
+            elseif i==#types[k] then
+              return "Argument "..k.." should be of type \""..table.concat(types[k],"\" or \"").."\", was type \""..type(v).."\""
+            end
+          end
+        elseif types[k]:sub(1,1)=="~" then
+          if type(v)==types[k] then
+            return "Argument "..k.." should not be of type \""..types[k]:sub(2).."\", was type \""..type(v).."\""
+          end
+        elseif type(v)~=types[k] and types[k]~=nil then
+          return "Argument "..k.." should be of type \""..types[k].."\", was type \""..type(v).."\""
+        end
+      elseif type(types)=="string" then
+        if types:sub(1,1)=="~" then
+          if types:sub(2)==type(v) then
+            return "Argument "..k.." should not be of type \""..types:sub(2).."\", was type \""..type(v).."\""
+          end
+        elseif type(v)~=types then
+          return "Argument "..k.." should be of type \""..types.."\", was type \""..type(v).."\""
+        end
+      else
+        return "Argument 2 to typeError() needs to be type(s) as a string! (typeError(arg,\"nil\"), not typeError(arg,nil))"
+      end
+    end
+  end
+end
+
+local oldmath={}
+oldmath.floor=math.floor
+function math.floor(...)
+  local num={...}
+  local errText=typeError(num,"number")
+  if errText then error(errText) end
+  for k,v in pairs(num) do
+    num[k]=oldmath.floor(tonumber(v))
+  end
+  return unpack(num)
+end
+
+oldmath.ceil=math.ceil
+function math.ceil(...)
+  local num={...}
+  local errText=typeError(num,"number")
+  if errText then error(errText) end
+  for k,v in pairs(num) do
+    num[k]=oldmath.ceil(tonumber(v))
+  end
+  return unpack(num)
+end
+
+function math.round(...)
+  local num={...}
+  local errText=typeError(num,"number")
+  if errText then error(errText) end
+  local lowNum=0
+  for k,v in pairs(num) do
+    lowNum=oldmath.floor(tonumber(v))
+    num[k]=lowNum+((v-lowNum<.5 and 0) or 1)
+  end
+  return unpack(num)
+end
+
+stringx={}
+function stringx.indexOf(str,char,index)
+  local reservedChars={"(",")",".","%","+","-","*","?","[","]","^","$"}
+  for k,v in pairs(reservedChars) do --Put a % in front of lua pattern chars.
+    if char==v then
+      char="%"..char
+      break
+    end
+  end
+  return ({str:find(char,index)})[1]
+end
+
+function stringx.lastIndexOf(str,char,index)
+  local errText=typeError({str,char,index},{"string","string",{"number","nil"}})
+  if errText then error(errText) end
+  index=index or 1
+  local charLen=#char
+  for i=#str-charLen+index,charLen,-1 do
+    if str:sub(i,i+charLen-1)==char then
+      return i
+    end
+  end
+end
+
+function stringx.split(str,char)
+  local errText=typeError({str,char},"string")
+  if errText then error(errText) end
+  tbl={}
+  findChar=stringx.indexOf(str,char)
+  if findChar then
+    table.insert(tbl,str:sub(1,findChar-1))
+    repeat
+      findChar2=stringx.indexOf(str,char,findChar+1)
+      if findChar2~=nil then
+        table.insert(tbl,str:sub(findChar+1,findChar2-1))
+        findChar=findChar2
+      end
+    until findChar2==nil
+    table.insert(tbl,str:sub(findChar+1))
+  else
+    return {str}
+  end
+  return tbl
+end
+
+--Returns the index of element in tbl, or nil if no such index exists.
+--Returns the indices as a table as so: {ind1,ind2,...indN} for tbl[ind1][ind2]...[indN].
+function table.indexOf(tbl,element)
+  local errText=argError(tbl,element) or typeError({tbl},"table")
+  if errText then error(errText) end
+  local indices={}
+  local function searchTbl(tbl,element)
+    for k,v in pairs(tbl) do
+      if type(v)=="table" then
+        local index=searchTbl(v,element) --Recursive search
+        if index~=nil then
+          table.insert(indices,k)
+          return indices
+        else
+          return nil
+        end
+      elseif v==element then
+        table.insert(indices,k)
+        return indices
+      end
+    end
+    return nil
+  end
+  for k,v in pairs(tbl) do
+    if type(v)=="table" then
+      local indices={k}
+      local results=searchTbl(v,element)
+      for i=#results,1,-1 do --searchTbl returns the indices in reverse, so if you insert them backwards, it's correct.
+        indices[#indices+1]=results[i]
+      end
+      return indices
+    elseif v==element then
+      return k
+    end
+  end
+end
+
+function getTblVal(...) --This is what you would give the results from table.indexOf() to.
+--The first argument should be the table being accessed, the following arguments should be the indices in order.
+--Example use: To access tbl.bacon[a][5].c, use "getTblVal(tbl,unpack({"bacon",a,5,"c"}))" or "getTblVal(tbl,"bacon",a,5,"c")"
+  local args={...}
+  return #args>=3 and getTblVal(args[1][args[2]],select(3,...)) or args[1][args[2]]
+end
+
+--Copied from penlight. https://github.com/stevedonovan/Penlight/blob/master/lua/pl/tablex.lua
+function table.equals(tbl1,tbl2,ignoreMetatable,threshold) --Returns if two tables are the same, including sub-tables.
+  local type1=type(tbl1)
+  local type2=type(tbl2)
+  if type1~=type2 then return false end
+  --Non-table types can be directly compared
+  if type1~="table" then
+    if type1=="number" and threshold then
+      return math.abs(tbl1-tbl2)<threshold
+    end
+    return tbl1==tbl2
+  end
+  --As well as tables which have the metamethod __eq
+  local metatable=getmetatable(tbl1)
+  if not ignoreMetatable and metatable and metatable.__eq then
+    return tbl1==tbl2
+  end
+  for k1 in pairs(tbl1) do
+    if tbl2[k1]==nil then
+      return false
+    end
+  end
+  for k2 in pairs(tbl2) do
+    if tbl1[k2]==nil then
+      return false
+    end
+  end
+  for k1,v1 in pairs(tbl1) do
+    local v2=tbl2[k1]
+    if not table.equals(v1,v2,ignoreMetatable,threshold) then
+      return false
+    end
+  end
+  return true
+end
+
+--Copies the value of tbl1 to tbl2 instead of making a pointer.
+--Copied from penlight. https://github.com/stevedonovan/Penlight/blob/master/lua/pl/tablex.lua
+function table.copy(tbl)
+  if type(tbl)~="table" then return tbl end
+  local metatable=getmetatable(tbl)
+  local copiedTbl={}
+  for k,v in pairs(tbl) do
+    if type(v)=="table" then
+      v=table.copy(v)
+    end
+    copiedTbl[k]=v
+  end
+  setmetatable(copiedTbl,metatable)
+  return copiedTbl
+end

@@ -1,0 +1,3 @@
+ print [[ Welcome to Arc OS you can find all the commands in this section.
+ help - This command bring up this section.
+ programs - Gives you a list of the programs installed as Commands within Arc OS. ]]

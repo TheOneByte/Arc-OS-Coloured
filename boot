@@ -5,6 +5,8 @@ local commands = {
  ["programs"] = "lib/programs",
  ["help"] = "lib/help",
  ["credits"] = "lib/credits",
+ --["stargate"] = "proggrams/Lanteacraft_Dialer",
+
 }
 
  term.clear()

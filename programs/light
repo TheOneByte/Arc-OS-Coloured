@@ -31,4 +31,3 @@ if commands[input] then
   end
 
 end
-

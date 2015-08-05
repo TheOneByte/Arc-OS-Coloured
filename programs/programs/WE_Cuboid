@@ -1,0 +1,431 @@
+cuboid={}
+function oppositeDirection(dir)
+  dir=dir:lower()
+  if dir=="east" then
+    return "west"
+  elseif dir=="west" then
+    return "east"
+  elseif dir=="north" then
+    return "south"
+  elseif dir=="south" then
+    return "north"
+  elseif dir=="up" then
+    return "down"
+  elseif dir=="down" then
+    return "up"
+  end
+  return "Not a direction"
+end
+
+function isDirection(dir,getSelf)
+  errText=typeError({dir,getSelf},{"string",{"boolean","nil"}})
+  if errText then debug.printError(errText) end
+  local directions={"up","down","north","south","east","west"}
+  for i=1,#directions do
+    if dir:lower()==directions[i] then
+      return true
+    elseif i==#directions and getSelf then
+      return dir:lower()=="self"
+    end
+  end
+end
+
+function hasDirection(str,getSelf)
+  errText=typeError({dir,getSelf},{"string",{"boolean","nil"}})
+  if errText then debug.printError(errText) end
+  local directions={"up","down","north","south","east","west"}
+  for i=1,#directions do
+    if str:find(" "..directions[i]) then
+      return true
+    elseif i==#directions and getSelf then
+      return str:find(" self")
+    end
+  end
+end
+
+function cuboid.expand() --http://wiki.sk89q.com/wiki/WorldEdit/Selection#Expanding_the_selection
+  command=message:sub(8):lower()
+  if command:find("vert") then
+    y1=1
+    y2=256
+    makeCuboidSelection()
+    sendChat("Region expanded vertically. ("..#Selection..")")
+    return
+  elseif hasDirection(command,not hasChatBox) then
+    local args=stringx.split(command," ")
+    for i=1,#args do
+      if isDirection(args[i]) then
+        Direction=args[i]
+      elseif args[i]:find(",") then
+        local args2=stringx.split(args[i],",")
+        if #args2==2 and tonumber(args2[1]) and tonumber(args2[2]) then
+          beforeComma=tonumber(args2[1])
+          afterComma=tonumber(args2[2])
+        end
+      elseif tonumber(args[i]) then
+        command=args[i]
+      end
+    end
+  else
+    Direction=string.lower(getDirection(true))
+    if not Direction then return end
+  end
+  if not tonumber(command) and (not tonumber(beforeComma) or not tonumber(afterComma)) then
+    sendChat((not tonumber(beforeComma) and ("\""..tostring(beforeComma).."\"") or ("\""..tostring(afterComma).."\""))..((not tonumber(beforeComma) and not tonumber(afterComma)) and (" and "..("\""..tostring(afterComma).."\"")) or "").." "..((not tonumber(beforeComma) and not tonumber(afterComma)) and "are" or "is").." not a number"..((not tonumber(beforeComma) and not tonumber(afterComma)) and "s" or "").."!")
+    --I may like ternary operators a bit too much...
+    return
+  end
+  if beforeComma and afterComma then
+    if Direction=="east" then
+      if x1 >=x2 then
+        x1=x1+beforeComma
+        x2=x2-afterComma
+      else
+        x1=x1-afterComma
+        x2=x2+beforeComma
+      end
+    elseif Direction=="west" then
+      if x1 >=x2 then
+        x1=x1+afterComma
+        x2=x2-beforeComma
+      else
+        x1=x1-beforeComma
+        x2=x2+afterComma
+      end
+    elseif Direction=="north" then
+      if z1 >=z2 then
+        z1=z1+afterComma
+        z2=z2-beforeComma
+      else
+        z1=z1-beforeComma
+        z2=z2+afterComma
+      end
+    elseif Direction=="south" then
+      if z1 >=z2 then
+        z1=z1+beforeComma
+        z2=z2-afterComma
+      else
+        z1=z1-afterComma
+        z2=z2+beforeComma
+      end
+    elseif Direction=="up" then
+      if y1 >=y2 then
+        y1=y1+beforeComma
+        y2=y2-afterComma
+      else
+        y1=y1-afterComma
+        y2=y2+beforeComma
+      end
+    elseif Direction=="down" then
+      if y1 >=y2 then
+        y1=y1+afterComma
+        y2=y2-beforeComma
+      else
+        y1=y1-beforeComma
+        y2=y2+afterComma
+      end
+    else
+      sendChat("Invalid direction.")
+      return
+    end
+    makeCuboidSelection()
+    sendChat("Region expanded "..beforeComma.." block"..((tonumber(beforeComma)>1 and "s") or "").." "..Direction.." and "..afterComma.." block"..((tonumber(afterComma)>1 and "s") or "").." "..oppositeDirection(Direction)..".".." ("..#Selection..")")
+  else
+    if not tonumber(command) then
+      sendChat("\""..command.."\" is not a number!")
+      return
+    else
+      command=tonumber(command)
+    end
+    if Direction=="east" then
+      if x1 > x2 then
+        x1=x1+tonumber(command)
+      else
+        x2=x2+tonumber(command)
+      end
+    elseif Direction=="west" then
+      if x1 > x2 then
+        x2=x2-tonumber(command)
+      else
+        x1=x1-tonumber(command)
+      end
+    elseif Direction=="north" then
+      if z1 > z2 then
+        z2=z2-tonumber(command)
+      else
+        z1=z1-tonumber(command)
+      end
+    elseif Direction=="south" then
+      if z1 > z2 then
+        z1=z1+tonumber(command)
+      else
+        z2=z2+tonumber(command)
+      end
+    elseif Direction=="up" then
+      if y1 > y2 then
+        y1=y1+tonumber(command)
+      else
+        y2=y2+tonumber(command)
+      end
+    elseif Direction=="down" then
+      if y1 > y2 then
+        y2=y2-tonumber(command)
+      else
+        y1=y1-tonumber(command)
+      end
+    else
+      sendChat("Invalid direction.")
+      return
+    end
+    makeCuboidSelection()
+    sendChat("Region expanded "..tonumber(command).." block"..((tonumber(command)>1 and "s") or "").." "..Direction..".".." ("..#Selection..")")
+  end
+end
+
+function cuboid.contract() --http://wiki.sk89q.com/wiki/WorldEdit/Selection#Contracting_the_selection
+  local command=message:sub(9):lower()
+  if hasDirection(command,not hasChatBox) then
+    local args=stringx.split(command," ")
+    for i=1,#args do
+      if isDirection(args[i]) then
+        Direction=args[i]
+      elseif args[i]:find(",") then
+        local args2=stringx.split(args[i],",")
+        if #args2==2 and tonumber(args2[1]) and tonumber(args2[2]) then
+          beforeComma=tonumber(args2[1])
+          afterComma=tonumber(args2[2])
+        end
+      elseif tonumber(args[i]) then
+        command=args[i]
+      end
+    end
+  else
+    Direction=string.lower(getDirection(true))
+    if not Direction then return end
+  end
+  if not tonumber(command) and (not tonumber(beforeComma) or not tonumber(afterComma)) then
+    sendChat((not tonumber(beforeComma) and ("\""..tostring(beforeComma).."\"") or ("\""..tostring(afterComma).."\""))..((not tonumber(beforeComma) and not tonumber(afterComma)) and (" and "..("\""..tostring(afterComma).."\"")) or "").." "..((not tonumber(beforeComma) and not tonumber(afterComma)) and "are" or "is").." not a number"..((not tonumber(beforeComma) and not tonumber(afterComma)) and "s" or "").."!")
+    --I may like ternary operators a bit too much...
+    return
+  end
+  if beforeComma and afterComma then
+    if Direction=="east" then
+      if x1 >=x2 then
+        x1=x1-beforeComma
+        x2=x2+afterComma
+      else
+        x1=x1+afterComma
+        x2=x2-beforeComma
+      end
+    elseif Direction=="west" then
+      if x1 >=x2 then
+        x1=x1-afterComma
+        x2=x2+beforeComma
+      else
+        x1=x1+beforeComma
+        x2=x2-afterComma
+      end
+    elseif Direction=="north" then
+      if z1 >=z2 then
+        z1=z1-afterComma
+        z2=z2+beforeComma
+      else
+        z1=z1+beforeComma
+        z2=z2-afterComma
+      end
+    elseif Direction=="south" then
+      if z1 >=z2 then
+        z1=z1-beforeComma
+        z2=z2+afterComma
+      else
+        z1=z1+afterComma
+        z2=z2-beforeComma
+      end
+    elseif Direction=="up" then
+      if y1 >=y2 then
+        y1=y1-beforeComma
+        y2=y2+afterComma
+      else
+        y1=y1+afterComma
+        y2=y2-beforeComma
+      end
+    elseif y1 >=y2 then
+      y1=y1-afterComma
+      y2=y2+beforeComma
+    else
+      y1=y1+beforeComma
+      y2=y2-afterComma
+    end
+    makeCuboidSelection()
+    sendChat("Region contracted "..beforeComma.." block"..((tonumber(beforeComma)>1 and "s") or "").." "..Direction.." and "..afterComma.." block"..((tonumber(afterComma)>1 and "s") or "").." "..oppositeDirection(Direction)..".")
+  else
+    if not tonumber(command) then
+      sendChat("\""..command.."\" is not a number!")
+      return
+    else
+      command=tonumber(command)
+    end
+    if Direction=="east" then
+      if x1 > x2 then
+        x1=x1-command
+      else
+        x2=x2-command
+      end
+    elseif Direction=="west" then
+      if x1 > x2 then
+        x2=x2+command
+      else
+        x1=x1+command
+      end
+    elseif Direction=="north" then
+      if z1 > z2 then
+        z2=z2+command
+      else
+        z1=z1+command
+      end
+    elseif Direction=="south" then
+      if z1 > z2 then
+        z1=z1-command
+      else
+        z2=z2-command
+      end
+    elseif Direction=="up" then
+      if y1 > y2 then
+        y1=y1-command
+      else
+        y2=y2-command
+      end
+    elseif Direction=="down" then
+      if y1 > y2 then
+        y2=y2+command
+      else
+        y1=y1+command
+      end
+    else
+      sendChat("Incorrect direction.")
+      return
+    end
+    makeCuboidSelection()
+    sendChat("Region contracted "..command.." block"..((command>1 and "s") or "").." "..Direction..".".." ("..#Selection..")")
+  end
+end
+
+function cuboid.inset() --http://wiki.sk89q.com/wiki/WorldEdit/Selection#Contracting_2_axes_simultaneously_.28inset.29
+  local command=message:sub(6)
+  if tonumber(command) then
+    command=tonumber(command)
+    if x1>x2 then
+      x1=x1-command
+      x2=x2+command
+    else
+      x1=x1+command
+      x2=x2-command
+    end
+    if z1>z2 then
+      z1=z1-command
+      z2=z2+command
+    else
+      z1=z1+command
+      z2=z2-command
+    end
+    if y1>y2 then
+      y1=y1-command
+      y2=y2+command
+    else
+      y1=y1+command
+      y2=y2-command
+    end
+  else
+    sendChat("\""..command.."\" is not a number!")
+    return
+  end
+  makeCuboidSelection()
+  sendChat("Selection inset "..command.." block"..((tonumber(command)>1 and "s") or "")..".")
+end
+
+function cuboid.outset() --http://wiki.sk89q.com/wiki/WorldEdit/Selection#Contracting_2_axes_simultaneously_.28inset.29
+  local command=message:sub(7)
+  if tonumber(command) then
+    command=tonumber(command)
+    if x1>x2 then
+      x1=x1+command
+      x2=x2-command
+    else
+      x1=x1-command
+      x2=x2+command
+    end
+    if z1>z2 then
+      z1=z1+command
+      z2=z2-command
+    else
+      z1=z1-command
+      z2=z2+command
+    end
+    if y1>y2 then
+      y1=y1+command
+      y2=y2-command
+      if y1 >256 then
+        y1=256
+      end
+      if y2 < 0 then
+        y2=0
+      end
+    else
+      y1=y1-command
+      y2=y2+command
+      if y2 >256 then
+        y2=256
+      end
+      if y1 < 0 then
+        y1=0
+      end
+    end
+  end
+  makeCuboidSelection()
+  sendChat("Selection outset "..command.." block"..((tonumber(command)>1 and "s") or "")..".")
+end
+
+function cuboid.shift() --http://wiki.sk89q.com/wiki/WorldEdit/Selection#Shifting_your_selection
+  local command=string.lower(message:sub(6))
+  local dir=false
+  if hasDirection(command,not hasChatBox) then
+    local args=stringx.split(command," ")
+    for i=1,#args do
+      if tonumber(args[i]) then
+        dir=true
+        command=args[i]
+      elseif isDirection(args[i]) then
+        Direction=args[i]
+      end
+    end
+  end
+  if tonumber(command) and not dir then
+    Direction=string.lower(getDirection(true))
+    if not Direction then return end
+    dir=true
+  end
+  if Direction=="east" then
+    x1=x1+tonumber(command)
+    x2=x2+tonumber(command)
+  elseif Direction=="west" then
+    x2=x2-tonumber(command)
+    x1=x1-tonumber(command)
+  elseif Direction=="north" then
+    z2=z2-tonumber(command)
+    z1=z1-tonumber(command)
+  elseif Direction=="south" then
+    z1=z1+tonumber(command)
+    z2=z2+tonumber(command)
+  elseif Direction=="up" then
+    y1=y1+tonumber(command)
+    y2=y2+tonumber(command)
+  elseif Direction=="down" then
+    y2=y2-tonumber(command)
+    y1=y1-tonumber(command)
+  else
+    sendChat("Incorrect direction.")
+    return
+  end
+  makeCuboidSelection()
+  sendChat("Region shifted "..tonumber(command).." block"..((tonumber(command)>1 and "s") or "").." "..Direction..".".." ("..#Selection..")")
+end

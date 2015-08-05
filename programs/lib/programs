@@ -1,0 +1,5 @@
+ term.setTextColor(colors.yellow)
+ print [[ light - Access the Lighting Sytems
+ shell - Access Shell Control
+ worldedit - Access the Worldedit Program 
+ Stargate - Access the Stargate Computer DHD ]]

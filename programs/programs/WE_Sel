@@ -1,0 +1,239 @@
+sel={}
+local sleepInterval=sleepInterval or 25000
+local sleepInterval2=sleepInterval or 6
+
+function getSleepTime(count,count2,iterations,checksBlocks,sleepInterval,sleepInterval2)
+  local sleepInterval=sleepInterval or 25000
+  local sleepInterval2=sleepInterval or 6
+  if hasChatBox and checksBlocks then
+    return iterations/20
+  else
+    return (math.floor((count+count2*sleepInterval)/sleepInterval)/20+math.floor((count+count2*sleepInterval)/(sleepInterval*sleepInterval2))/10+0.05)
+  end
+end
+
+function BlockHasChanged(x,y,z,id,meta)
+  local blockData
+  if hasChatBox then
+    blockData=commands.getBlockInfo(x,y,z)
+    return blockData.name~=idToMCName(id) or blockData.metadata~=meta
+  end
+  return getBlockID(x,y,z)~=id or getMetadata(x,y,z)~=meta
+end
+
+function BlockEquals(x,y,z,id,meta)
+  local blockData
+  if hasChatBox then
+    if tonumber(id) then
+      id=idToMCName(id)
+    end
+    blockData=commands.getBlockInfo(x,y,z)
+    return blockData.name==id and blockData.metadata==meta
+  end
+  return getBlockID(x,y,z)==id and getMetadata(x,y,z)==meta
+end
+
+local MCVersion=1.7
+function sel.set(NoOutput) --http://wiki.sk89q.com/wiki/WorldEdit/Region_operations#Setting_blocks
+  local count=0
+  local count2=0
+  local iterations=0
+  if #Selection>0 then
+    for i=1,#Selection do --Go through all of the blocks in the selection...
+      x=Selection[i].x
+      y=Selection[i].y
+      z=Selection[i].z
+      count=count+1
+      if count>=sleepInterval then
+        count=0
+        sleep(0.05)
+        count2=count2+1
+      elseif count2>=sleepInterval2 then
+        count2=0
+        sleep(0.05)
+      end --Save the server from death by sleeping for a tick each 25000 blocks, and 2 for every 150000.
+      local blockChanged
+      if hasChatBox and MCVersion>=1.8 then
+        local maxPercent=1
+        for i=1,#Percentages do
+          if Percentages[i]>Percentages[maxPercent] then
+            maxPercent=i
+          end
+        end --Set as many blocks of the most common block type with fill to use as few commands as possible.
+        commands.exec("fill "..x1.." "..y1.." "..z1.." "..x2.." "..y2.." "..z2.." "..Blocks2[maxPercent].." "..Meta2[maxPercent].." replace")
+        if #Blocks2==1 then
+          break
+        end
+      end
+      if not (#Blocks2>1 and hasChatBox and MCVersion>=1.8) then
+        if TotalPercent~=0 then
+          repeat
+            BlockType=math.random(1,#Blocks2)
+            RandomRoll=math.random(1,TotalPercent)
+          until RandomRoll<=tonumber(Percentages[BlockType]) --Pick weighted random numbers, so that it picks a block randomly using the probabilities given by the user.
+        else
+          BlockType=1 --If there's only one block, use it!
+        end
+        if not hasChatBox then
+          blockChanged=BlockHasChanged(x,y,z,Blocks2[BlockType],Meta2[BlockType])
+          setBlock(x,y,z,Blocks2[BlockType],Meta2[BlockType])
+        elseif hasChatBox then
+          blockChanged=setBlock(x,y,z,Blocks2[BlockType],Meta2[BlockType])
+        end
+        if blockChanged then --If the block is actually CHANGED.
+          iterations=iterations+1 --Count how many blocks actually changed.
+        end
+        if iterations==1 and blockChanged then
+          sendChat("Setting blocks...")
+        end
+      end
+      if hasChatBox and MCVersion>=1.8 then
+        iterations=#Selection
+      end
+    end
+  end
+  if not NoOutput then
+    if iterations==0 then
+      sendChat("No blocks changed.")
+    else
+      sendChat(iterations.." blocks changed in "..getSleepTime(count,count2,iterations,false).." seconds.")
+    end --Tell the user how many blocks changed.
+  end
+end
+
+function sel.replace(NoOutput) --http://wiki.sk89q.com/wiki/WorldEdit/Region_operations#Replacing_blocks
+  local count=0
+  local count2=0
+  local iterations=0
+  local sleepInterval=sleepInterval or 25000
+  local sleepInterval2=sleepInterval or 6
+  if #Selection>0 then
+    for i=1,#Selection do --Go through all of the blocks in the selection...
+      x=Selection[i].x
+      y=Selection[i].y
+      z=Selection[i].z
+      if count>=sleepInterval then
+        count=0
+        sleep(0.05)
+        count2=count2+1
+      elseif count2>=sleepInterval2 then
+        count2=0
+        sleep(0.05)
+      end
+      count=count+1
+      if TotalPercent~=0 then
+        repeat
+          BlockType=math.random(1,#Blocks2)
+          RandomRoll=math.random(1,TotalPercent)
+        until RandomRoll<=tonumber(Percentages[BlockType])
+      else
+        BlockType=1
+      end
+      for i=1,#Blocks do
+        if BlockEquals(x,y,z,Blocks[i],Meta[i]) then --If they match any of them...
+          setBlock(x,y,z,Blocks2[BlockType],Meta2[BlockType])
+          iterations=iterations+1 --Count how many blocks were changed.
+          break
+        end
+      end
+      if iterations==1 then
+        sendChat("Replacing blocks...")
+      end
+    end
+  end
+  if not NoOutput then
+    if iterations==0 then
+      sendChat("No blocks changed.")
+    else
+      sendChat(iterations.." blocks changed in "..getSleepTime(count,count2,iterations,true).." seconds.")
+    end
+  end
+end
+
+function sel.naturalize(NoOutput)
+  local count=0
+  local count2=0
+  local iterations=0
+  local Map=heightmap()
+  for i=1,#Map do
+    x,y,z=Map[i].x,Map[i].y,Map[i].z
+    if y then
+      count=count+1
+      if count>=sleepInterval then
+       count=0
+        sleep(0.05)
+        count2=count2+1
+      elseif count2>=sleepInterval2 then
+        count2=0
+        sleep(0.05)
+      end
+      for j=0,3 do
+        local ID=tonumber(getBlockID(x,y-j,z))
+        if ID==1 or ID==2 or ID==3 then
+          naturalBlockID=((j==0 and 2) or 3)
+          if BlockHasChanged(x,y-j,z,naturalBlockID,0) then
+            iterations=iterations+1
+            setBlock(x,y-j,z,naturalBlockID,0)
+          end
+          if iterations==1 then
+            sendChat("Naturalizing...")
+          end
+        end
+      end
+    end
+  end
+  if not NoOutput then
+    if iterations==0 then
+      sendChat("No blocks changed.")
+    else
+      sendChat(iterations.." blocks changed in "..getSleepTime(count,count2,iterations,true).." seconds.")
+    end
+  end
+end
+
+function sel.overlay(NoOutput)
+  local count=0
+  local count2=0
+  local iterations=0
+  local Map=heightmap()
+  local BlockType
+  for i=1,#Map do
+    if tonumber(Map[i].y) then
+      x,y,z=Map[i].x,Map[i].y,Map[i].z
+      count=count+1
+      if count>=sleepInterval then
+        count=0
+        sleep(0.05)
+        count2=count2+1
+      elseif count2>=sleepInterval2 then
+        count2=0
+        sleep(0.05)
+      end
+      if TotalPercent~=0 then
+        repeat
+          BlockType=math.random(1,#Blocks2)
+          local RandomRoll=math.random(1,TotalPercent)
+        until RandomRoll<=tonumber(Percentages[BlockType])
+      else
+        local BlockType=1
+      end
+      for i=1,#Blocks2 do
+        if BlockHasChanged(x,y+1,z,Blocks2[BlockType],Meta2[BlockType]) then
+          setBlock(x,y+1,z,Blocks2[BlockType],Meta2[BlockType])
+          iterations=iterations+1
+          break
+        end
+      end
+      if iterations==1 then
+        sendChat("Overlaying blocks...")
+      end
+    end
+  end
+  if not NoOutput then
+    if iterations==0 then
+      sendChat("No blocks changed.")
+    else
+      sendChat(iterations.." blocks changed in "..getSleepTime(count,count2,iterations,false).." seconds.")
+    end
+  end
+end

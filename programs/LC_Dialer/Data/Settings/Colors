@@ -1,0 +1,7 @@
+--Dail Button (active,inactive) default = gray/light gray = 128/256 ,red/orange = 16384/2, light blue/blue = 512/2048, magenta/purple = 4/1024, lime/green = 32/8192
+CMidBTA = 128
+CMidBTNA = 256
+--BG
+CBG = 1
+--Other Buttons
+COtherBT = 256

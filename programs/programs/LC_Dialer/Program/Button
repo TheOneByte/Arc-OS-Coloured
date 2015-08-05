@@ -1,0 +1,367 @@
+
+--[[Button API (+ more)]]--
+
+buttons = {}
+
+function roundDown(num, idp)
+  local mult = 10^(idp or 0)
+  return math.floor(num * mult ) / mult
+end
+
+--Frame[y][x]["bgColor"]
+--Frame[y][x]["textColor"]
+--Frame[y][x]["text"]
+
+function clear()
+ BackgroundColor = colors.black
+ TextColor = colors.white
+ Frame = {}
+ OldFrame = {}
+ for y = -50,50 do
+  Frame[y] = {}
+  OldFrame[y] = {}
+  for x = -100,100 do
+   Frame[y][x] = {}
+   Frame[y][x]["bgColor"] = colors.black
+   Frame[y][x]["textColor"] = colors.white
+   Frame[y][x]["text"] = " "
+   OldFrame[y][x] = {}
+   OldFrame[y][x]["bgColor"] = " "
+   OldFrame[y][x]["textColor"] = " "
+   OldFrame[y][x]["text"] = " "
+  end
+ end
+ 
+end
+
+clear()
+
+function clearAndDraw()
+ clear()
+ draw()
+end
+
+function getFrame()
+ return(Frame)
+end
+function getOFrame()
+ return(OldFrame)
+end
+
+function draw()
+ for y = 1,19 do
+  for x = 1,51 do
+   if OldFrame[y][x]["bgColor"] ~= Frame[y][x]["bgColor"] or OldFrame[y][x]["textColor"] ~= Frame[y][x]["textColor"] or OldFrame[y][x]["text"] ~= Frame[y][x]["text"] then
+    term.setCursorPos(x,y)
+    term.setBackgroundColor(Frame[y][x]["bgColor"])
+    term.setTextColor(Frame[y][x]["textColor"])
+    term.write(Frame[y][x]["text"])
+	OldFrame[y][x]["bgColor"] = Frame[y][x]["bgColor"]
+	OldFrame[y][x]["textColor"] = Frame[y][x]["textColor"]
+	OldFrame[y][x]["text"] = Frame[y][x]["text"]
+   end
+  end
+ end  
+ 
+end
+
+function setBackgroundColor(bgc)
+ BackgroundColor = bgc
+end
+function setTextColor(tc)
+ TextColor = tc
+end
+
+
+function setP(x,y,bgc)
+ if bgc ~= nil and bgc ~= "" then
+  Frame[y][x]["bgColor"] = bgc
+ else
+  Frame[y][x]["bgColor"] = BackgroundColor
+ end
+ Frame[y][x]["text"] = " "
+end
+
+function setF(x1,y1,x2,y2,bgc)
+ for x = x1,x2 do
+  for y = y1,y2 do
+   if bgc ~= nil and bgc ~= "" then
+    Frame[y][x]["bgColor"] = bgc
+   else
+    Frame[y][x]["bgColor"] = BackgroundColor
+   end
+   Frame[y][x]["text"] = " "
+  end
+ end
+end
+
+function write(Text,x,y,textColor,bgc)
+ local trash = 0
+ if x == nill or x == "" then
+  x,trash = term.getCursorPos()
+ else
+  x = roundDown(x, 0)
+ end
+ if y == nill or y == "" then
+  trash,y = term.getCursorPos()
+ else
+  y = roundDown(y, 0)
+ end
+ 
+ local tblText = {}
+ for i = 1,string.len(Text) do 
+  tblText[i] = string.reverse(string.sub(string.reverse(string.sub(Text,i)),string.len(Text)-i+1))
+ end
+ 
+ for i = 0,string.len(Text)-1 do
+  if textColor ~= nil and textColor ~= "" then
+   Frame[y][x+i]["textColor"] = textColor
+  else
+   Frame[y][x+i]["textColor"] = TextColor
+  end
+  if bgc ~= nil and bgc ~= "" then
+   Frame[y][x+i]["bgColor"] = bgc
+  else
+   Frame[y][x+i]["bgColor"] = BackgroundColor
+  end
+  Frame[y][x+i]["text"] = tblText[i+1]
+ end
+end
+
+
+--removes all button's
+function deleteAllButtons()
+ buttons = {}
+ SlideBars = {}
+end
+
+--name off the button
+--removes a button 
+function deleteButton(name)
+ buttons[name] = {}
+end
+
+--name off the button, the new name
+--changes the displayed name off a button
+function changeDispName(name,newDispName) 
+ if buttons[name] ~= nil then
+  if buttons[name]["dispname"] then
+   buttons[name]["dispname"] = newDispName
+  end
+ end
+end
+
+--name off the button
+--returns the displayed name off a button
+function getDispName(name) 
+ return(buttons[name]["dispname"])
+end
+
+--name off the button, number button, the new color
+--sets the color off a button
+function setColor(name,num,newcolor)
+ if num == 1 then chgn = "colorOn"
+ elseif num == 2 then chgn = "colorOff"
+ elseif num == 3 then chgn = "colorText" end
+ buttons[name][chgn] = newcolor
+end
+
+--name off the button, number button
+--returns the color off a button in numbers
+function getColor(name,num)
+ if num == 1 then chgn = "colorOn"
+ elseif num == 2 then chgn = "colorOff"
+ elseif num == 3 then chgn = "colorText" end
+ return(buttons[name][chgn])
+end
+
+function addExtraText(name,text)
+ buttons[name]["extraText"] = text
+end
+
+function setButton(name,stat)
+ if buttons[name] ~= nil then
+  if buttons[name]["active"] ~= nil then
+   buttons[name]["active"] = stat
+  end
+ end
+end
+
+function toggleButton(name)
+ if buttons[name] ~= nil then
+  if buttons[name]["active"] ~= nil then
+   buttons[name]["active"] = not(buttons[name]["active"])
+  end
+ end
+end
+
+function flashButton(name,delay)
+ if delay == nil then 
+  delay = 0.16
+ elseif type(delay) ~= "number" then
+  if delay <= 0 or delay > 4 then
+   error ("'delay' not valid")
+  end
+ end
+ toggleButton(name)
+ sleep(delay)
+ toggleButton(name)
+end
+
+function createButton(name,dtxt,func,par,x1,y1,x2,y2,c1,c2,c3)
+ --button name, display name, fucntion,parameter,x1,y1,x2,y2
+ --color On, color Off, text color
+ if c1 == nill then
+  c1 = colors.lime
+ end
+ if c2 == nill then
+  c2 = colors.red
+ end
+ if c3 == nill then
+  c3 = colors.white
+ end
+ buttons[name] = {}
+ buttons[name]["active"] = false
+ buttons[name]["dispname"] = dtxt
+ buttons[name]["function"] = func
+ buttons[name]["parameter"] = par
+ buttons[name]["x1"] = x1
+ buttons[name]["y1"] = y1
+ buttons[name]["x2"] = x2
+ buttons[name]["y2"] = y2
+ buttons[name]["colorOn"] = c1
+ buttons[name]["colorOff"] = c2
+ buttons[name]["colorText"] = c3
+end
+
+function fill(text,color,cData)
+  setTextColor(cData["colorText"])
+  setBackgroundColor(color)
+  local yspot = math.floor((cData["y1"] + cData["y2"]) /2)
+  local xspot = math.floor((cData["x2"] - cData["x1"] - string.len(text)) /2) +1 
+  setF(cData["x1"],cData["y1"],cData["x2"],cData["y2"],color)
+  write(text,cData["x1"]+xspot, yspot,cData["colorText"],color)
+  --setBackgroundColor(colors.black)
+end
+
+function fill2(text,color,cData)
+  setTextColor(cData["colorText"])
+  setBackgroundColor(color)
+  local yspot = math.floor((cData["y1"] + cData["y2"]) /2)
+  local xspot = math.floor((cData["x2"] - cData["x1"] - string.len(text)) /2) +1 
+  for j = cData["y1"], cData["y2"] do
+   --term.setCursorPos(cData["x1"], j)
+   if j == yspot then
+    for k = 0, cData["x2"]-cData["x1"]-string.len(text)+1 do
+     if k == xspot then
+      write(text,cData["x1"]+k, j)
+     else
+	  if cData["x1"]+k >= xspot and cData["x1"]+k <= xspot+string.len(text) then
+	   a = string.len(text)-1
+	  else
+	   a = 0
+	  end
+      write(" ",cData["x1"]+k+a, j)
+     end
+    end  
+   else
+    for i = cData["x1"], cData["x2"] do
+     setP(i,j,color)
+    end
+   end
+  end
+  --setBackgroundColor(colors.black)
+end
+
+function extraText(text,currColor,data)
+ x = roundDown(data["x1"]+(data["x2"]-data["x1"])/2-string.len(text)/2+1,0)
+ write(text,x,data["y2"],TextColor,currColor)
+end
+
+function drawButtons()
+ local currColor
+ for name,data in pairs(buttons) do
+  if data["active"] == true then 
+   currColor = data["colorOn"] 
+  else 
+   currColor = data["colorOff"] 
+  end
+  txt = data["dispname"]
+  fill(txt, currColor, data)
+  if data["extraText"] ~= nill then
+   extraTxt = data["extraText"]
+   extraText(extraTxt,currColor,data)
+  end
+ end
+ DrawSlideBars()
+-- draw()
+end
+
+function checkxy(x, y)
+ for name, data in pairs(buttons) do
+  if y>=data["y1"] and  y <= data["y2"] then
+   if x>=data["x1"] and x<= data["x2"] then
+    if data["parameter"] == "" then
+     data["function"]()
+    else
+     data["function"](data["parameter"])
+    end
+    return true
+   end
+  end
+ end
+ return false
+end
+
+
+--sliders
+SlideBars = {}
+
+function checkSlideBar(x,y)
+ for NameSlider,Value in pairs(SlideBars) do
+  if x >= Value["xSB"]+6 and x <= Value["xSB"]+9 and y == Value["ySB"] then
+   SlideBars[NameSlider]["Boolean"] = not(SlideBars[NameSlider]["Boolean"])
+  end
+ end
+end
+
+function DrawSlideBars()
+ for NameSlider,Value in pairs(SlideBars) do
+  setF(Value["xSB"],Value["ySB"],Value["xSB"]+12+string.len(Value.dispName),Value["ySB"],colors.white,colors.black)
+  setF(Value["xSB"]+6,Value["ySB"],Value["xSB"]+9,Value["ySB"],colors.lightGray,colors.black)
+  if Value.Boolean then
+   write("true",Value["xSB"],Value["ySB"],colors.black,colors.white)
+   setP(Value["xSB"]+6,Value["ySB"],colors.gray,colors.black)
+  else
+   write("false",Value["xSB"],Value["ySB"],colors.black,colors.white)
+   setP(Value["xSB"]+9,Value["ySB"],colors.gray,colors.black)
+  end
+  write(Value.dispName,Value["xSB"]+12,Value["ySB"],colors.black,colors.white)
+ end
+ draw()
+end
+
+function DeleteAllSliders()
+ SlideBars = {}
+end
+
+function getSliderValue(Name)
+ return(SlideBars[Name]["Boolean"])
+end
+
+function setSliderValue(Name,value)
+ SlideBars[Name]["Boolean"] = value
+end
+
+function CreateSildeBar(x,y,name,dispName,value)
+ if SlideBars[name] == nil then 
+  if type(value) == "boolean" and type(x) == "number" and type(y) == "number" then
+   SlideBars[name] = {}
+   SlideBars[name]["xSB"] = x
+   SlideBars[name]["ySB"] = y
+   SlideBars[name]["Boolean"] = value
+   SlideBars[name]["dispName"] = dispName
+  end
+ end
+end
+

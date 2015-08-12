@@ -1,3 +1,5 @@
+if term.isColor() then
+
 uname = "root"
 pword = "123456"
 local side = "left"
@@ -204,4 +206,8 @@ else
 print("Incorrect Usrername! Shuttdown Down System...!")
 sleep(2)
 shell.run("startup")
+end
+
+else
+print("This Version Of Arc OS Requires Colour please either use an Advanced Computer or download the Standard Version")
 end

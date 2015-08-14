@@ -1,4 +1,0 @@
- local side = "back"
-term.setTextColor(colors.green)
- print("Turning Lights On")
- redstone.setOutput(side, true)

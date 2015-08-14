@@ -1,0 +1,33 @@
+local commands = {
+ ["help"] = "/lib/light",
+ ["end"] = "/boot",
+ ["on"] = "/lib/on",
+ ["off"] = "/lib/off",
+ ["logout"] = "/startup",
+
+}
+
+term.clear()
+term.setCursorPos(1,1)
+term.setTextColor(colors.red)
+ print '                   ------------'
+ print '                      Arc OS   '
+ print '                   ------------'
+
+
+term.setTextColor(colors.yellow)
+ print("Welcome to Lighting system")
+ 
+while true do
+ 
+ write("root@:")
+ local input = read()
+
+if commands[input] then
+  shell.run( commands [input])
+
+ else
+  print("Command not found!")
+  end
+
+end

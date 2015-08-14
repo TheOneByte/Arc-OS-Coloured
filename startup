@@ -1,0 +1,73 @@
+if term.isColor() then
+
+local progressbar = {"----------","|---------","||--------","|||-------","||||------","|||||-----","||||||----","|||||||---","||||||||--","|||||||||-","||||||||||","----------","|---------","||--------","|||-------","||||------","|||||-----","||||||----","|||||||---","||||||||--","|||||||||-","||||||||||"} 
+term.clear()
+
+uname = "root"
+pword = "123456"
+local side = "left"
+
+function os.pullEvent()
+local event, p1, p2, p3, p4, p5 = os.pullEventRaw()
+if event == "terminate" then
+end
+return event, p1, p2, p3, p4, p5
+end
+
+sleep (0.5)
+bground = paintutils.loadImage(".background")
+paintutils.drawImage(bground,1,1)
+for i=1,#progressbar do
+term.setCursorPos(20,12)
+print(progressbar[i])
+sleep(0.5)
+end
+
+term.clear()
+term.setCursorPos(1,1)
+term.setTextColor(colors.red)
+
+print '                   ------------'
+print '                      Arc OS   '
+print '                   ------------'
+
+term.setTextColor(colors.yellow)
+write("Username: ")
+username = read()
+if username == (uname) then
+sleep(1)
+
+term.clear()
+term.setCursorPos(1,1)
+term.setTextColor(colors.red)
+
+print '                   ------------'
+print '                      Arc OS   '
+print '                   ------------'
+
+term.setTextColor(colors.yellow)
+write("Password: ")
+password = read("*")
+
+if password == (pword) then
+sleep(0.75)
+term.clear()
+term.setCursorPos(1,1)
+print("Welcome Back User!")
+shell.run("boot")
+
+else
+print("Incorrect Password! Shutting Down System...!")
+sleep(2)
+shell.run("startup")
+end
+
+else
+print("Incorrect Usrername! Shuttdown Down System...!")
+sleep(2)
+shell.run("startup")
+end
+
+else
+print("This Version Of Arc OS Requires Colour please either use an Advanced Computer or download the Standard Version")
+end

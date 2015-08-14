@@ -1,0 +1,2819 @@
+dirProg = "programs/LC_Dialer/Program/"
+dirAddress = "programs/LC_Dialer/Address's/"
+dirData = "programs/LC_Dialer/Data/"
+
+--colors
+CGR = colors.gray
+CLGR = colors.lightGray
+CW = colors.white
+CR = colors.red
+CO = colors.orange
+CC= colors.cyan
+CG = colors.green
+CBl = colors.blue
+CLBl = colors.lightBlue
+CB = colors.black
+CL = colors.lime
+CY = colors.yellow
+CM = colors.magenta
+CP = colors.purple
+--colors
+--valid SG Glyphs 
+validSGChar = {"A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","0","1","2","3","4","5","6","7","8","9","+","-"}
+--valid SG Glyphs 
+
+SG = {}
+function SG.splitAdress(address)
+ if sg.getStargateAddressString() == nil then
+  os.reboot()
+ end
+ if type(address) == "string" then
+  if string.len(address) == 7 or string.len(address) == 9 then
+   local AddressLength = string.len(address)  
+   local tblAdress = {}
+   for i = 1,AddressLength do 
+    tblAdress[i] = string.reverse(string.sub(string.reverse(string.sub(address,i)),AddressLength-i+1))
+   end
+   return(tblAdress)
+   else error("Address is to short/long")
+  end
+  else error("Address has to be a string")
+ end
+end
+
+function SG.getIrisType()
+ if sg.getStargateAddressString() == nil then
+  os.reboot()
+ end
+ --return(sg.getIrisType())
+ --return(nil)
+ return("Atlantis")
+end
+
+function SG.getIrisState()
+ if sg.getStargateAddressString() == nil then
+  os.reboot()
+ end
+ --return(sg.getIrisState())
+ return("Closed")
+end
+
+function SG.openIris()
+ if sg.getStargateAddressString() == nil then
+  os.reboot()
+ end
+end
+
+function SG.closeIris()
+ if sg.getStargateAddressString() == nil then
+  os.reboot()
+ end
+end
+
+function SG.selectGlyph(glpyh)
+ if sg.getStargateAddressString() == nil then
+  os.reboot()
+ end
+ sg.selectGlyph(glpyh)
+ sleep(0.4)
+end
+
+function SG.activateChevron()
+ if sg.getStargateAddressString() == nil then
+  os.reboot()
+ end
+ sg.activateChevron()
+ sleep(1)
+end
+
+function SG.deactivateLastChevron()
+ if sg.getStargateAddressString() == nil then
+  os.reboot()
+ end
+ sleep(0.4)
+ sg.deactivateChevron()
+ sleep(1)
+end
+
+function SG.deactivateAllChevrons()
+ if sg.getStargateAddressString() == nil then
+  os.reboot()
+ end
+ SGbg.gateDialing = false
+ SGbg.Pause = true
+ sleep(0.4)
+ while sg.getActivatedChevrons() ~= 0 do
+  if sg.getStargateAddressString() == nil then
+   os.reboot()
+  end
+  sg.deactivateChevron()
+  sleep(1)
+ end
+end
+
+function SG.deactivateAllWrongChevrons(address)
+ if sg.getStargateAddressString() == nil then
+  os.reboot()
+ end
+ if SG.getActivatedChevrons() ~= 0 then
+  while SG.getActivatedGlyphs() ~= string.reverse(string.sub(string.reverse(string.sub(SGbg.Address)),10-SG.getActivatedChevrons())) do
+   if SG.getActivatedChevrons() == 0 then
+    break
+   else
+    sg.deactivateChevron()
+	sleep(1)
+   end
+  end
+ end
+end
+
+function SG.connect()
+ if sg.getStargateAddressString() == nil then
+  os.reboot()
+ end
+ sg.engageStargate()
+end
+
+function SG.disconnect()
+ if sg.getStargateAddressString() == nil then
+  os.reboot()
+ end
+ sg.disengageStargate()
+end
+
+function SG.dial(address,autoCon)
+ if sg.getStargateAddressString() == nil then
+  os.reboot()
+ end
+ SGbg.RestartDialing = true
+ SGbg.Address = address
+ SGbg.gateDialing = true
+ SGbg.ReadyToConnect = true
+ SGbg.gateRunning = true
+ SGbg.Pause = false
+ if type(autoCon) ~= "boolean" then
+  autoCon = true
+ end
+  SGbg.AutoConnect = autoCon
+ ansR = {true,address}
+ return ansR
+end
+
+function SG.getActivatedChevrons()
+ if sg.getStargateAddressString() == nil then
+  os.reboot()
+ end
+ return(sg.getActivatedChevrons())
+end
+
+function SG.getStargateAddressString()
+ if sg.getStargateAddressString() == nil then
+  os.reboot()
+ end
+ return(sg.getStargateAddressString())
+end
+
+function SG.getActivatedGlyphs()
+ if sg.getStargateAddressString() == nil then
+  os.reboot()
+ end
+ return(sg.getActivatedGlyphs())
+end
+
+SGbg = {}
+SGbg.gateDialing = false
+SGbg.RestartDialing = false
+SGbg.Pause = true
+SGbg.Address = nil
+SGbg.AutoConnect = false
+
+function SG.gateProcces()
+ while true do
+  if type(SGbg.Address) == "string" then
+   if string.len(SGbg.Address) == 9 or string.len(SGbg.Address) == 7 then 
+    SG.disconnect()
+	--SG.deactivateAllWrongChevrons(SGbg.Address)
+    SG.deactivateAllChevrons()
+	SGbg.gateDialing = true
+    SGbg.Pause = false
+    local Chevrons = SG.splitAdress(SGbg.Address)
+	AddressLength = string.len(SGbg.Address)
+    local Chevron = 0
+    local LastChevron = nil
+    while Chevron ~= AddressLength-1 and SGbg.gateDialing == true and SGbg.RestartDialing ~= true do
+	 if SGbg.Pause == false then
+      Chevron = SG.getActivatedChevrons()
+      if Chevrons[Chevron+1] ~= LastChevron and SGbg.RestartDialing ~= true then
+       SG.selectGlyph(Chevrons[Chevron+1])
+       LastChevron = Chevrons[Chevron+1]
+      end
+	  for delay = 1,4 do 
+	   if SGbg.RestartDialing == true then
+	    break
+	   end
+	   sleep(0.1)
+	  end
+	  if SGbg.Pause == false then
+	   if SGbg.RestartDialing ~= true then
+        SG.activateChevron()
+	   end
+       for delay = 1,10 do 
+	    if SGbg.RestartDialing == true then
+	     break
+	    end
+	    sleep(0.1)
+	   end
+	  end
+	  if SGbg.RestartDialing ~= true then
+	   --glymps 
+	   --while SG.getActivatedGlyphs() ~= string.reverse(string.sub(string.reverse(string.sub(SGbg.Address)),10-SG.getActivatedChevrons())) do
+	   -- SG.deactivateLastChevron()
+	   --end
+	  end
+	 else
+	  sleep(0.2)
+	 end
+    end
+	if SGbg.RestartDialing ~= true then 
+     SGbg.Address = nil
+    end 
+	sleep(0.4)
+   else sleep(0.4)
+   end
+  else sleep(0.4)
+  end
+  if SGbg.AutoConnect == true and SGbg.Pause == false and (SG.getActivatedChevrons() == 9 or SG.getActivatedChevrons() == 7) and SGbg.RestartDialing ~= true then
+   SG.connect()
+   SGbg.ReadyToConnect = false
+   SGbg.gateDialing = false
+   SGbg.Pause = true
+   SGbg.AutoConnect = false
+  end
+  SGbg.RestartDialing = false
+ end
+end
+
+
+function roundDown(num, idp)
+  local mult = 10^(idp or 0)
+  return math.floor(num * mult ) / mult
+end
+
+function isValidAddress(address)
+ if type(address) == "string" then
+  if string.len(address) == 7 or string.len(address) == 9 then
+   address = string.upper(address)
+   Chevrons = SG.splitAdress(address)
+   for i = 1,string.len(address) do 
+    local valid = false
+    for j = 1,38 do 
+     if Chevrons[i] == validSGChar[j] then 
+      valid = true
+	 end
+    end
+	if valid == false then 
+	 return(false)
+	end
+   end
+   return(true)
+  else
+   return(false)
+  end
+ else 
+  return(false)
+ end
+end
+
+
+function splitWord(word)
+ if type(word) == "string" then
+  local wordLength = string.len(word)  
+  local tblWord = {}
+  for i = 1,wordLength do 
+   tblWord[i] = string.reverse(string.sub(string.reverse(string.sub(word,i)),wordLength-i+1))
+  end
+  return(tblWord)
+  else 
+  --error("word has to be a string")
+ end
+end
+
+function isValidAddressPart(addressPart)
+ if type(addressPart) == "number" then addressPart = tostring(addressPart) end
+ if type(addressPart) == "string" then
+  addressPart = string.upper(addressPart)
+  Chevrons = splitWord(addressPart)
+  for i = 1,string.len(addressPart) do 
+   local valid = false
+   for j = 1,38 do 
+    if Chevrons[i] == validSGChar[j] then 
+     valid = true
+	end
+   end
+   if valid == false then 
+	return(false)
+   end
+  end
+  return(true)
+ else 
+  return(false)
+ end
+end
+
+function Read(maxLength,word,BGcolorR,onlySG,mouseclick,paste,autoClose,displayChar,blinkOn)
+ ReadDone = false
+ xc = 0 yc = 0
+ if type(mouseButtons) ~= "boolean" then
+  mouseButtons = false
+ end 
+ if type(blinkOn) ~= "boolean" then
+  blinkOn = true
+ end 
+ BT.setBackgroundColor(BGcolorR)
+ if word == nil or word == "" then
+  word = ""
+  wordLength = 0
+  if blinkOn then
+   term.setCursorBlink(true)
+  end
+  xRead,yRead = term.getCursorPos()
+ else
+  wordLength = string.len(word)
+  if blinkOn then
+   term.setCursorBlink(true)
+  end
+  xRead,yRead = term.getCursorPos()
+  if displayChar == nil then
+   BT.write(word,xRead,yRead)
+  else
+   for i = 0,string.len(word) do
+	BT.write(displayChar,xRead+i,yRead,CB,BGcolorR)
+   end
+  end
+ end
+ xRead = xRead + (wordLength)
+ if onlySG == nil then 
+  onlySG = false 
+ end
+ if wordLength ~= maxLength and blinkOn ~= true then
+  BT.write("_",xRead,yRead)
+ end
+ BT.draw()
+ term.setCursorPos(xRead,yRead)
+ while true do
+  if blinkOn then
+   term.setCursorBlink(true)
+  end
+  event, key,xc,yc = os.pullEvent()
+  if type(xc) ~= "number" or type(yc) ~= "number" then
+   xc = 0 yc = 0
+  end   
+  if event == "terminate" then 
+   quitProgram()
+  elseif paste and event == "paste" and wordLength ~= maxLength then
+   if key ~= nil then
+    if string.len(key) + wordLength <= maxLength then
+     if onlySG == true then
+      key = string.upper(key)
+     end
+	 if onlySG ~= true or (onlySG and isValidAddressPart(key)) then
+ 	  wordLength = wordLength + string.len(key)
+	  word = word..key
+	  if displayChar ~= nil then
+ 	   for i = 0,string.len(key) do
+	    BT.write(displayChar,xRead+i,yRead,CB,BGcolorR)
+	   end
+	  else
+	   BT.write(key,xRead,yRead,CB,BGcolorR)
+	  end
+	  xRead = xRead + string.len(key)
+      if wordLength ~= maxLength and blinkOn ~= true then
+       BT.write("_",xRead,yRead)
+      end
+	  BT.draw()
+	 end
+	end
+   end
+  end
+  if event == "key" then
+   if onlySG == true then
+    if (key >= 16 and key <= 25) or (key >= 30 and key <= 38) or (key >= 44 and key <= 50) or (key >= 71 and key <= 82) or key == 28 or key == 14 then
+     keyOK = true
+    else keyOK = false
+    end 
+   else keyOK = true
+   end
+  elseif event == "char" then 
+   if onlySG == true then
+    if type(tonumber(key)) == "number" then 
+     keyOK = true
+    else 
+     --keyOK = false
+    end
+	else keyOK = true
+   end
+  end
+  if keyOK == true then 
+   BT.setBackgroundColor(BGcolorR)
+   if event == "char" and (maxLength == nil or wordLength < maxLength) then 
+    if onlySG == true then
+     key = string.upper(key)
+    end
+    word = word..key
+    wordLength = wordLength + 1
+    BT.write(displayChar or key,xRead,yRead,CB,BGcolorR)	
+	xRead = xRead + 1
+	if wordLength ~= maxLength and blinkOn ~= true then
+     BT.write("_",xRead,yRead)
+    end
+	if key == " " then
+	 term.setCursorPos(xRead,yRead)
+	end
+	BT.draw()
+   elseif event == "key" then 
+    if key == 14 and wordLength ~= 0 then --backspace
+     xRead = xRead - 1
+     term.setCursorPos(xRead,yRead)
+     BT.write(' ') --delete the last character
+	 if wordLength ~= maxLength and blinkOn ~= true then
+      BT.write("_ ",xRead,yRead)
+     end
+	 BT.draw()
+     term.setCursorPos(xRead,yRead) --move the cursor to that same spot
+     wordLength = wordLength - 1
+     word = word:sub(1,wordLength) --delete the last character of the real string
+    elseif key == 28 then --enter
+     term.setCursorBlink(false)
+	 ReadDone = true
+     return word
+    end 
+   elseif autoClose and maxLength ~= nil and wordLength == maxLength then
+    term.setCursorBlink(false)
+    return(word)
+   end
+  end
+  if event == "mouse_click" then
+   if mouseclick == true and maxLength ~= nil then 
+    --xRead,yRead = term.getCursorPos() 
+    if xc <= xRead-wordLength or xc >= xRead-wordLength+maxLength or yRead ~= yc then
+     term.setCursorBlink(false)
+     return word
+    end
+   end
+  end
+ end
+end
+
+function quitProgram(yOffset)
+ --OldMenu = Menu
+ if Menu ~= "startup" and Menu ~= "RequestPass" then 
+  if type(yOffset) ~= "number" then yOffset = 0 end
+  BT.deleteAllButtons()
+  if Settings.ExitingProgramReqPass and Settings.PasswordEnabled then
+   local ans = RequestPassword(-1,false,yOffset,true," Quit Program")
+   if ans == true or ans == "No Pass" then
+    ENDPROGRAM = true
+   end
+  else
+   ENDPROGRAM = true
+  end
+ end
+ --Menu = OldMenu
+end
+
+function RequestPassword(MaxAttempt,autoShutdown,yOfset,backAllowed,msg)
+ OldMenu = Menu
+ Menu = "RequestPass"
+ if type(msg) ~= "string" then msg = "" end
+ if Settings.PasswordEnabled ~= true then return(true) end
+ if type(backAllowed) ~= "boolean" then backAllowed = false end
+ if type(yOfset) ~= "number" then yOfset = 0 end
+ if type(MaxAttempt) ~= "number" or MaxAttempt == 0 then MaxAttempt = -1 end
+ local attempt = 0
+ local EnterdPass = nil
+ local CorrectPass = nil
+ if fs.exists(dirData.."Settings/Password") then
+  f = fs.open(dirData.."Settings/Password","r")
+  CorrectPass = f.readLine()
+  f.close()
+  if CorrectPass == nil or CorrectPass == "" then return("No Pass") end
+ else 
+  Menu = OldMenu
+  return("No Pass")
+ end
+ BT.deleteAllButtons()
+ back = false
+ while attempt ~= MaxAttempt do
+  BT.setF(11,6+yOfset,41,8+yOfset,CGR,CB)
+  BT.setF(13,8+yOfset,34,8+yOfset,CLGR,CB)
+  if backAllowed then
+   BT.setF(11,9+yOfset,41,11+yOfset,CGR,CB)
+   BT.createButton("back","Back",goBack,"" ,13,10+yOfset,39,10+yOfset,CR,CR,CB)
+  end
+  if MaxAttempt > 1 then
+   BT.write(MaxAttempt-attempt.."/MaxAttempt",36,7+yOfset,CB,CGR)
+  end
+  BT.write(msg,51/2-string.len(msg)/2+1,6+yOfset,CB,CGR)
+  BT.write("Password: ",13,8+yOfset,CB,CGR)
+  BT.drawButtons()
+  term.setBackgroundColor(CLGR)
+  term.setCursorPos(23,8+yOfset)
+  EnterdPass = Read(12,"",CLGR,false,true,Settings.PastePasswordAllowed,false,"*",false,true)
+  if EnterdPass == CorrectPass then 
+   Menu = OldMenu
+   return(true)
+  end
+  if EnterdPass ~= nil and EnterdPass ~= "" and EnterdPass ~= " " then
+   attempt = attempt + 1
+  elseif ((xc <= 11 or xc >= 41 or yc <= 6+yOfset or yc >= 11+yOfset) or (xc >= 13 and xc <= 39 and yc == 10+yOfset)) and event == "mouse_click" and backAllowed then
+   Menu = OldMenu  
+   return("back")
+  end
+ end
+ if autoShutdown and done ~= true then 
+  os.shutdown()
+ end
+ Menu = OldMenu
+ return(false)
+end
+
+function setSettings()
+ dirSettings = dirData.."Settings/"
+ for NameSlider,Value in pairs(Settings) do
+  --oldValue = nil
+  if type(Value) == "boolean" then
+   f = fs.open(dirSettings..NameSlider,"r")
+   oldValue = f.readLine()
+   f.close()
+   if oldValue == "false" then
+   oldValue = false
+   elseif oldValue == "true" then
+    oldValue = true
+   end
+   if oldValue ~= Value then
+    f = fs.open(dirSettings..NameSlider,"w")
+    f.writeLine(Value)
+    f.close()
+   end
+  end
+ end
+end
+
+ EventsBC = os.pullEvent
+function getSettings()
+ Settings = {}
+ os.pullEvent = os.pullEventRaw
+ dirSettings = dirData.."Settings/"
+ if fs.exists(dirSettings.."PasswordEnabled") then
+  f = fs.open(dirSettings.."PasswordEnabled","r")
+  Settings.PasswordEnabled = f.readLine()
+  f.close()
+ else
+  Settings.PasswordEnabled = false
+  f = fs.open(dirSettings.."PasswordEnabled","w")
+  f.writeLine(false)
+  f.close()
+ end
+ if fs.exists(dirSettings.."StartupReqPass") then
+  f = fs.open(dirSettings.."StartupReqPass","r")
+  Settings.StartupReqPass = f.readLine()
+  f.close()
+ else
+  Settings.StartupReqPass = false
+  f = fs.open(dirSettings.."StartupReqPass","w")
+  f.writeLine(false)
+  f.close()
+ end
+ if fs.exists(dirSettings.."ChangingSettingsReqPass") then
+  f = fs.open(dirSettings.."ChangingSettingsReqPass","r")
+  Settings.ChangingSettingsReqPass = f.readLine()
+  f.close()
+ else
+  Settings.ChangingSettingsReqPass = false
+  f = fs.open(dirSettings.."ChangingSettingsReqPass","w")
+  f.writeLine(false)
+  f.close()
+ end
+ if fs.exists(dirSettings.."ExitingProgramReqPass") then
+  f = fs.open(dirSettings.."ExitingProgramReqPass","r")
+  Settings.ExitingProgramReqPass = f.readLine()
+  f.close()
+ else
+  Settings.ExitingProgramReqPass = false
+  f = fs.open(dirSettings.."ExitingProgramReqPass","w")
+  f.writeLine(false)
+  f.close()
+ end
+ if fs.exists(dirSettings.."OpeningIrisReqPas") then
+  f = fs.open(dirSettings.."OpeningIrisReqPas","r")
+  Settings.OpeningIrisReqPas = f.readLine()
+  f.close()
+ else
+  Settings.OpeningIrisReqPas = false
+  f = fs.open(dirSettings.."OpeningIrisReqPas","w")
+  f.writeLine(false)
+  f.close()
+ end
+ if fs.exists(dirSettings.."PastePasswordAllowed") then
+  f = fs.open(dirSettings.."PastePasswordAllowed","r")
+  Settings.PastePasswordAllowed = f.readLine()
+  f.close()
+ else
+  Settings.PastePasswordAllowed = false
+  f = fs.open(dirSettings.."PastePasswordAllowed","w")
+  f.writeLine(false)
+  f.close()
+ end
+ if fs.exists(dirSettings.."DialingReqPass") then
+  f = fs.open(dirSettings.."DialingReqPass","r")
+  Settings.DialingReqPass = f.readLine()
+  f.close()
+ else
+  Settings.DialingReqPass = false
+  f = fs.open(dirSettings.."DialingReqPass","w")
+  f.writeLine(false)
+  f.close()
+ end
+ if fs.exists(dirSettings.."EditAddressReqPass") then
+  f = fs.open(dirSettings.."EditAddressReqPass","r")
+  Settings.EditAddressReqPass = f.readLine()
+  f.close()
+ else
+  Settings.EditAddressReqPass = false
+  f = fs.open(dirSettings.."EditAddressReqPass","w")
+  f.writeLine(false)
+  f.close()
+ end
+ if fs.exists(dirSettings.."AddAddressReqPass") then
+  f = fs.open(dirSettings.."AddAddressReqPass","r")
+  Settings.AddAddressReqPass = f.readLine()
+  f.close()
+ else
+  Settings.AddAddressReqPass = false
+  f = fs.open(dirSettings.."AddAddressReqPass","w")
+  f.writeLine(false)
+  f.close()
+ end
+ if fs.exists(dirSettings.."DelAddressReqPass") then
+  f = fs.open(dirSettings.."DelAddressReqPass","r")
+  Settings.DelAddressReqPass = f.readLine()
+  f.close()
+ else
+  Settings.DelAddressReqPass = false
+  f = fs.open(dirSettings.."DelAddressReqPass","w")
+  f.writeLine(false)
+  f.close()
+ end
+  if fs.exists(dirSettings.."AutoFindGate") then
+  f = fs.open(dirSettings.."AutoFindGate","r")
+  Settings.AutoFindGate = f.readLine()
+  f.close()
+ else
+  Settings.AutoFindGate = false
+  f = fs.open(dirSettings.."AutoFindGate","w")
+  f.writeLine(false)
+  f.close()
+ end
+ --control
+ if fs.exists(dirSettings.."KeyControl") then
+  f = fs.open(dirSettings.."KeyControl","r")
+  Settings.KeyControl = f.readLine()
+  f.close()
+ else
+  Settings.KeyControl = true
+  f = fs.open(dirSettings.."KeyControl","w")
+  f.writeLine(true)
+  f.close()
+ end
+ if fs.exists(dirSettings.."ScrollControl") then
+  f = fs.open(dirSettings.."ScrollControl","r")
+  Settings.ScrollControl = f.readLine()
+  f.close()
+ else
+  Settings.ScrollControl = true
+  f = fs.open(dirSettings.."ScrollControl","w")
+  f.writeLine(true)
+  f.close()
+ end
+ if fs.exists(dirSettings.."RemoteControl") then
+  f = fs.open(dirSettings.."RemoteControl","r")
+  Settings.RemoteControl = f.readLine()
+  f.close()
+ else
+  Settings.RemoteControl = true
+  f = fs.open(dirSettings.."RemoteControl","w")
+  f.writeLine(true)
+  f.close()
+ end
+ --making boolean
+ for CommandName,CommandSetting in pairs(Settings) do
+  if CommandSetting == "false" then
+   Settings[CommandName] = false
+  elseif CommandSetting == "true" then
+   Settings[CommandName] = true
+  end
+ end
+ os.unloadAPI(dirProg.."Button") 
+ BT = {}
+ os.loadAPI(dirProg.."Button") 
+ BT = Button
+end
+
+
+function setColors()
+ --needs to be moved
+--  CMidBTA = CC
+--  CMidBTNA = CBL
+--  CMidBTA = CL
+--  CMidBTNA = CG
+--  CMidBTA = CM
+--  CMidBTNA = CP
+--  CMidBTA = CO
+--  CMidBTNA = CR
+  COL = CGR
+  CMidBTA = nil
+  CMidBTNA = nil
+  COtherBT = nil
+  CBG = nil
+  
+ if fs.exists(dirData.."Settings/Colors") then
+  loadfile(dirData.."Settings/Colors")()
+ else
+  CMidBTA = CGR
+  CMidBTNA = CLGR
+  COtherBT = CLGR
+  CBG = CW
+  f = fs.open(dirData.."Settings/Colors","w")
+  f.writeLine("--Dail Button (active,inactive) default = gray/light gray = 128/256 ,red/orange = 16384/2, light blue/blue = 512/2048, magenta/purple = 4/1024, lime/green = 32/8192")
+  f.writeLine("CMidBTA = "..CGR)
+  f.writeLine("CMidBTNA = "..CLGR)
+  f.writeLine("--BG")
+  f.writeLine("CBG = "..CW)
+  f.writeLine("--Other Buttons")
+  f.writeLine("COtherBT = "..CLGR)
+  f.close()
+ end
+end
+
+
+
+function Boot(xmid,ymid,cycle,stat,redraw)
+  --boot Menu
+ if redraw == nil or redraw == true then
+  BT.setF(1,1,51,1,CGR)
+  BT.setF(51,1,51,19,CGR)
+  BT.setF(1,1,1,19,CGR)
+  BT.setF(1,19,51,19,CGR)
+  BT.setF(2,2,50,18,CBG)
+  BT.draw()
+ end
+ BT.setBackgroundColor(CBG)
+ BT.setTextColor(CGR)
+ if stat ~= nil then
+  BT.setF(2,ymid+5,50,ymid+5,CBG)
+  BT.write(stat,xmid-(string.len(stat)/2-1),ymid+5,CB,CBG)
+ end
+ 
+  local char = {"#"," "}
+  local xmid = 26
+  local ymid = 13
+  local xCo = {0,1,2,3,3, 3, 2, 1, 0,-1,-2,-3,-3,-3,-2,-1}
+  local yCo = {2,2,2,1,0,-1,-2,-2,-2,-2,-2,-1, 0, 1, 2, 2}
+  BT.write("Booting",xmid-3,ymid-4,CB)
+  for i = 1,cycle do
+   for ch = 1,2 do
+    for c = 1,16 do
+     BT.write(char[ch],xmid+xCo[c],ymid-yCo[c],CB,CBG)
+	 BT.draw()
+     sleep(0.04) 
+    end
+   end
+  end
+end
+
+function Startup()
+ Menu = "startup"
+ getSettings()
+ setColors()
+ Boot(26,13,1,"initializing",true)
+ if Settings.StartupReqPass and Settings.PasswordEnabled then
+  BT.setF(2,2,50,18,CGR)
+  RequestPassword(-1,false,5,nil,"Startup")
+ end
+end
+
+Startup()
+
+if os.getComputerLabel() == nil then
+ os.setComputerLabel("LC_Dialer/Address")
+end
+
+
+function SetPeripheral()
+ Boot(26,13,1,"initializing",true)
+ perps = false
+ mon = {}
+ mon["StargatePicture"] = {}
+ while perps ~= true do
+ 
+ -- if fs.exists(dirData.."monitors/")
+ -- then
+ --  MonitorFile = {}
+ --  f = fs.open(dirData.."Monitor","r")
+ --  Line = 1
+ --  MonitorFile[Line] = f.readLine()
+ --  Line = Line + 1
+ --  while MonitorFile[Line] ~= nil
+ --  MonitorFile[Line] = f.readLine()
+ --  Line = Line + 1
+ --  f.close()
+ -- else
+
+  
+  monitor = {}
+  monitor[1] = "monitor_2" 
+  monitor[2] = "monitor_3"
+  
+  for i = 1,#monitor do
+   mon["StargatePicture"][i] = peripheral.wrap(monitor[i])
+  end
+  
+  dispMonitor = "monitor_4"
+  mon["DispMsg"] = peripheral.wrap(dispMonitor)
+  
+  Boot(26,13,1,"loading peripherals",redraw)
+  
+  
+  
+  --if  (mon3 ~= true or mon["DispMsg"] ~= nil) then
+   perps = true
+   if mon["DispMsg"] ~= nil then 
+    mon["DispMsg"].setTextScale(2)
+    mon["DispMsg"].setBackgroundColor(CBG)
+    mon["DispMsg"].clear()
+   else
+    --change peripherals
+   end
+  --end
+ end
+end
+
+
+
+
+function Peripherals()
+ CCON = CGR
+ function Continue()
+  if CCON == CG then
+   done2 = true  
+  end
+ end
+ Menu = "Peripherals"
+ if fs.exists(dirData.."Peripherals_Stargate") then
+  f = fs.open(dirData.."Peripherals_Stargate","r") 
+  stargate = f.readLine()
+  f.close()
+ else
+  stargate = ""
+ end
+ if stargate == nil then
+  stargate = ""
+ end
+ done2 = false
+ while done2 ~=  true do 
+  BT.deleteAllButtons()
+  BT.setF(1,1,51,19,COL)
+  BT.setF(2,2,50,17,CBG)
+  BT.createButton("Continue","Continue ",Continue,"" ,3,16,49,16,CCON,CCON,CB)
+  BT.CreateSildeBar(3,3,"AutoFindGate","Automatically find a gate",Settings.AutoFindGate)
+  if Settings.AutoFindGate ~= true then
+   BT.setF(3,5,30,5,CLGR)
+   BT.write("StargateBase: ",3,5,CB,CW)
+   BT.write(stargate,18,5,CB,CLGR)
+   if peripheral.getType(stargate) == "StargateBase" then
+    BT.setF(37,5,36,5,CG)
+   else
+    BT.setF(37,5,36,5,CR)
+   end
+  end
+  ev = "timer"
+  BT.drawButtons()
+  while ev == "timer" and done2 ~= true do 
+   ev,bt,x,y = os.pullEvent()
+   if Settings.AutoFindGate == true then
+	local tmpsg = nil 
+    tmpsg = peripheral.find("StargateBase")
+	CCON = CGR
+	if tmpsg ~= nil then
+	 sg = {}
+	 sg = tmpsg 
+	 CCON = CG
+	 done2 = true
+	else 
+	 BT.drawButtons()
+	 CCON = CGR
+	end
+   end
+   if ev == "terminate" then 
+    quitProgram()
+   elseif ev == "mouse_click" then
+    BT.checkxy(x,y)
+    BT.checkSlideBar(x,y)
+	Settings.AutoFindGate = BT.getSliderValue("AutoFindGate")
+	setSettings()
+   	if (x >= 18 and x <= 35 and y == 5) and Settings.AutoFindGate ~= true then
+	 BT.write("StargateBase: ",3,5,CB,CW)
+	 BT.drawButtons()
+     term.setBackgroundColor(CLGR)
+     term.setCursorPos(18,5)
+	 stargate = Read(18,stargate,CLGR,false,true,Settings.PastePasswordAllowed,false,nil,true)
+	 CCON = CGR
+	 if peripheral.getType(stargate) == "StargateBase" then
+	  sg = {}
+	  sg = peripheral.wrap(stargate)
+	  f = fs.open(dirData.."Peripherals_Stargate","w") 
+      f.writeLine(stargate)
+      f.close()
+	  CCON = CG
+	 end
+	elseif Settings.AutoFindGate == true then
+	 local tmpsg = nil 
+	 tmpsg = peripheral.find("StargateBase")
+	 CCON = CGR
+	 if tmpsg ~= nil then
+	  sg = {}
+	  sg = tmpsg 
+	  CCON = CG
+	 else 
+	  BT.drawButtons()
+	  CCON = CGR
+	 end
+	else
+	 BT.drawButtons()
+	end
+   end
+  end
+ end
+end
+
+function CheckStargate()
+ OldMenu = Menu
+ if Settings.AutoFindGate ~= true then  
+  if fs.exists(dirData.."Peripherals_Stargate") then
+   f = fs.open(dirData.."Peripherals_Stargate","r") 
+   stargate = f.readLine()
+   f.close()
+   if peripheral.getType(stargate) == "StargateBase" then
+    sg = peripheral.wrap(stargate)
+   else
+    Peripherals()
+   end
+  else
+   Peripherals()
+  end
+ elseif Settings.AutoFindGate == true then
+  local tmpsg = nil 
+  tmpsg = peripheral.find("StargateBase")
+  if tmpsg ~= nil then
+   sg = tmpsg
+  else
+   Peripherals()
+  end   
+ end
+end
+
+CheckStargate()
+
+--SetPeripheral()
+
+function DispMsg(msg,clr)
+ msgcheck = msg
+ BT.setBackgroundColor(CBG)
+ BT.setTextColor(clr)
+ if msg ~= newMSG then
+  BT.write("                               ",11,7,clr,CBG)
+ end
+ leng = string.len(msg)
+ BT.write(msg,51/2-leng/2+1,7,clr,CBG)
+ --if mon["DispMsg"] ~= nil then
+ -- mon["DispMsg"].setBackgroundColor(CBG)
+ -- mon["DispMsg"].setTextColor(clr)
+ -- if msg ~= newMSG then
+  -- mon["DispMsg"].setCursorPos(1,2)
+ --  mon["DispMsg"].write("                                    ")
+ -- end
+ -- mon["DispMsg"].setCursorPos(36/2-leng/2+1,2)
+ -- mon["DispMsg"].write(msg)
+ --end
+ newMSG = msg
+ BT.draw()
+end
+
+function tmpBT()
+end
+
+function MainM()
+ Menu = "Main"
+ setColors()
+ BT.deleteAllButtons()
+ BT.setF(1,1,51,1,COL)
+ BT.setF(1,1,1,19,COL)
+ BT.setF(51,1,51,19,COL)
+ BT.setF(1,6,51,8,COL)
+ BT.setF(1,18,51,19,COL)
+ BT.setF(2,2,50,5,CBG)
+ BT.setF(11,7,41,7,CBG)
+ BT.setF(2,9,50,17,CBG)
+ BT.deleteAllButtons()
+ BT.createButton("lockdown","Lockdown",lockdown,"" ,2,7,9,7,CR,CR,CB)
+ BT.createButton("Settings","Settings",settings.main,"" ,43,7,50,7,CLBl,CBl,CB)
+ --[[middle button]]--
+ BT.createButton("middleBT1"," ",middleButtonPause,"" ,22,10,30,10,CMidBTA,CMidBTNA,CB)
+ BT.createButton("middleBT2"," ",middleButton,"" ,21,11,31,11,CMidBTA,CMidBTNA,CB)
+ BT.createButton("middleBT3"," ",middleButton,"" ,20,12,32,12,CMidBTA,CMidBTNA,CB)
+ BT.createButton("middleBT4","dial",middleButton,"" ,20,13,32,13,CMidBTA,CMidBTNA,CB)
+ BT.createButton("middleBT5"," ",middleButton,"" ,20,14,32,14,CMidBTA,CMidBTNA,CB)
+ BT.createButton("middleBT6"," ",middleButton,"" ,21,15,31,15,CMidBTA,CMidBTNA,CB)
+ BT.createButton("middleBT7"," ",middleButtonConnect,"" ,22,16,30,16,CMidBTA,CMidBTNA,CB)
+ 
+ BT.createButton("bt1.1"," ",log,"" ,3,10,19,10,COtherBT,COtherBT,CB)
+ BT.createButton("bt1.2","log ",log,"" ,3,11,18,11,COtherBT,COtherBT,CB)
+ BT.createButton("bt1.3"," ",log,"" ,3,12,17,12,COtherBT,COtherBT,CB)
+ 
+ BT.createButton("bt2.1"," ",tmpBT,"" ,3,14,17,14,COtherBT,COtherBT,CB)
+ BT.createButton("bt2.2","Communication ",tmpBT,"" ,3,15,18,15,COtherBT,COtherBT,CB)
+ BT.createButton("bt2.3","Centre ",tmpBT,"" ,3,16,19,16,COtherBT,COtherBT,CB)
+ 
+ BT.createButton("bt3.1"," ",Iris,"" ,33,10,49,10,COtherBT,COtherBT,CB)
+ BT.createButton("bt3.2","iris ",Iris,"" ,34,11,49,11,COtherBT,COtherBT,CB)
+ BT.createButton("bt3.3"," ",Iris,"" ,35,12,49,12,COtherBT,COtherBT,CB)
+ 
+ BT.createButton("bt4.1"," ",tmpBT,"" ,35,14,49,14,COtherBT,COtherBT,CB)
+ BT.createButton("bt4.2"," ",tmpBT,"" ,34,15,49,15,COtherBT,COtherBT,CB)
+ BT.createButton("bt4.3"," ",tmpBT,"" ,33,16,49,16,COtherBT,COtherBT,CB)
+ 
+ --BT.drawButtons()
+ term.setCursorPos(1,19)
+end
+
+function lockdown()
+ Menu = "lockdown"
+ lockdownMode = true
+ BT.deleteAllButtons()
+ BT.setF(1,6,51,19,CGR)
+ BT.setF(11,7,41,7,CBG)
+ BT.setF(2,9,50,17,CBG)
+ if RequestPassword(-1,false,5,nil,"lockdown") then
+  MainM()
+ end
+end
+
+settings = {}
+
+function settings.Back()
+ done2 = true
+end
+
+function settings.Exit()
+ done2 = true 
+ done = true
+end
+
+function settings.Save()
+ if NewPassword ~= "" and NewPassword == NewPassword2 then
+  f = fs.open(dirSettings.."Password","w")
+  f.writeLine(NewPassword)
+  f.close()
+  settings.Exit()
+ end
+end
+
+function settings.PasswordSecurity()
+ oldPage = -1
+ if Settings.PasswordEnabled == true then
+  local ans = RequestPassword(-1,false,2,true,"Edit password")
+  if ans == true or ans == "No Pass" then
+   NewPassword = ""
+   NewPassword2 = ""
+   BT.deleteAllButtons()
+   while done ~= true do   
+    BT.setF(11,5,41,12,CGR,CB)
+    BT.setF(13,7,38,7,CLGR,CB)
+	BT.setF(13,9,38,9,CLGR,CB)
+    BT.write("Edit password",51/2-string.len("Edit password")/2+1,5,CB,CGR)
+    BT.write("New Password: ",13,7,CB,CGR)
+	BT.write("Confirmation: ",13,9,CB,CGR)
+	for i = 1,string.len(NewPassword) do
+	 BT.write("*",27+i-1,7,CB,CLGR)
+	end
+	for i = 1,string.len(NewPassword2) do
+	 BT.write("*",27+i-1,9,CB,CLGR)
+	end
+    BT.createButton("back","Back",settings.Exit,"" ,13,11,25,11,CR,CR,CB)
+	SC = CGR
+	if NewPassword ~= "" and NewPassword == NewPassword2 then
+	 SC = CBl
+	end
+	BT.createButton("save","Save",settings.Save,"",27,11,39,11,SC,SC,CB)
+	BT.drawButtons()
+	done2 = false
+    while done2 ~= true and done ~= true do
+     ev,bt,x,y = os.pullEvent()
+     if ev == "terminate" then 
+      quitProgram()
+      done2 = true
+     elseif ev == "mouse_click" then
+	  done2 = true
+	  BT.checkxy(x,y)
+	  if (x >= 13 and x <= 38 and y == 7)  then
+	   BT.write("New Password: ",13,7,CB,CGR)
+	   BT.drawButtons()
+       term.setBackgroundColor(CLGR)
+       term.setCursorPos(27,7)
+	   NewPassword = Read(12,NewPassword,CLGR,false,true,Settings.PastePasswordAllowed,false,"*",false,true)
+	  elseif (x >= 13 and x <= 38 and y == 9) then
+	   BT.write("Confirmation: ",13,9,CB,CGR)
+	   BT.drawButtons()
+       term.setBackgroundColor(CLGR)
+       term.setCursorPos(27,9)
+	   NewPassword2 = Read(12,NewPassword2,CLGR,false,true,Settings.PastePasswordAllowed,false,"*",false,true)
+      elseif (x <= 11 or x >= 41 or y <= 5 or y >= 12) then 
+	   done2 = false
+       return("back")
+	  end
+	 end
+	end
+   end
+  end
+ end
+ NewPassword = "" 
+ NewPassword2 = ""
+ done = false
+ done2 = false
+end
+
+function settings.DrawSecurity()
+ BT.deleteAllButtons()
+ BT.setF(1,1,51,19,COL)
+ BT.setF(2,2,50,17,CBG)
+ BT.createButton("Back","Back",settings.Back,"" ,3,17,25,17,CR,CR,CB)
+ BT.createButton("Exit","Exit",settings.Exit,"" ,27,17,49,17,CR,CR,CB)
+ BT.CreateSildeBar(3,3,"PasswordEnabled","Password is enabled",Settings.PasswordEnabled)
+ slider = Settings.PasswordEnabled
+ if Settings.PasswordEnabled then
+  BT.createButton("EditPassword","Edit password",settings.PasswordSecurity,"" ,3,5,49,5,CLGR,CLGR,CB)
+  if page == 0 then
+   BT.createButton("NextPage","---------->",swpage,1,27,15,49,15,CBl,CBl,CB)
+   BT.CreateSildeBar(3,7,"StartupReqPass","Startup requires password",Settings.StartupReqPass)
+   BT.CreateSildeBar(3,9,"ChangingSettingsReqPass","Opening settings requires password",Settings.ChangingSettingsReqPass) 
+   BT.CreateSildeBar(3,11,"OpeningIrisReqPas","Opening the iris requires password",Settings.OpeningIrisReqPas)
+   BT.CreateSildeBar(3,13,"ExitingProgramReqPass","Exit the program requires password",Settings.ExitingProgramReqPass)
+  elseif page == 1 then
+   BT.createButton("PreviousPage","<----------",swpage,-1,3,15,25,15,CBl,CBl,CB)
+   BT.createButton("NextPage","---------->",swpage,1,27,15,49,15,CBl,CBl,CB)
+   BT.CreateSildeBar(3,7,"PastePasswordAllowed","You can paste the password",Settings.PastePasswordAllowed)
+   BT.CreateSildeBar(3,9,"DialingReqPass","Opening dialer requires password",Settings.DialingReqPass)
+   BT.CreateSildeBar(3,11,"EditAddressReqPass","Edit an address requires password",Settings.EditAddressReqPass)
+   BT.CreateSildeBar(3,13,"DelAddressReqPass","Delete an address requires password",Settings.DelAddressReqPass)
+  elseif page == 2 then
+   BT.createButton("PreviousPage","<----------",swpage,-1,3,15,25,15,CBl,CBl,CB)
+   BT.CreateSildeBar(3,7,"AddAddressReqPass","Adding an address requires password",Settings.AddAddressReqPass)
+  end
+ end
+ BT.drawButtons()
+ BT.DrawSlideBars()
+end
+
+function settings.Security()
+ page = 0
+ Menu = "Settings-Security"
+ slider = Settings.PasswordEnabled oldSlider = Settings.PasswordEnabled
+ getSettings()
+ done2 = false
+ while done2 ~=  true do 
+  if Settings.PasswordEnabled and slider == false then
+   local ans = RequestPassword(-1,false,2,true,"Disable security")
+   if ans == true or ans == "No Pass" then
+    page = 0
+    Settings.PasswordEnabled = false
+	setSettings()
+	getSettings()
+   else
+    Settings.PasswordEnabled = true
+    setSettings()
+	getSettings()
+   end
+  elseif slider == true then 
+   Settings.PasswordEnabled = true
+   setSettings()
+   getSettings()
+ -- end
+  elseif Settings.PasswordEnabled then
+   
+   setSettings()
+   getSettings()
+  end
+  settings.DrawSecurity()
+  ev = "timer"
+  oldPage = page
+  while ev == "timer" and done2 ~= true do 
+   ev,bt,x,y = os.pullEvent()
+   if ev == "terminate" then 
+    quitProgram()
+   elseif ev == "mouse_click" then
+    BT.checkxy(x,y)
+    BT.checkSlideBar(x,y)
+	if oldPage ~= -1 then
+     slider = BT.getSliderValue("PasswordEnabled")
+	end
+	if Settings.PasswordEnabled == true then
+	 if oldPage == 0 then
+	  Settings.StartupReqPass = BT.getSliderValue("StartupReqPass")
+	  Settings.ChangingSettingsReqPass = BT.getSliderValue("ChangingSettingsReqPass")
+	  Settings.OpeningIrisReqPas = BT.getSliderValue("OpeningIrisReqPas")
+	  Settings.ExitingProgramReqPass = BT.getSliderValue("ExitingProgramReqPass")
+	 elseif oldPage == 1 then
+	  Settings.PastePasswordAllowed = BT.getSliderValue("PastePasswordAllowed")
+	  Settings.DialingReqPass = BT.getSliderValue("DialingReqPass")
+	  Settings.EditAddressReqPass = BT.getSliderValue("EditAddressReqPass")
+	  Settings.DelAddressReqPass = BT.getSliderValue("DelAddressReqPass")
+	 elseif oldPage == 2 then
+	  Settings.AddAddressReqPass = BT.getSliderValue("AddAddressReqPass")
+	 end
+	end
+   end
+  end
+  
+  
+  --done2 = true
+ end
+end
+
+function settings.Peripherals()
+ Menu = "Settings-Peripherals"
+ if fs.exists(dirData.."Peripherals_Stargate") then
+  f = fs.open(dirData.."Peripherals_Stargate","r") 
+  stargate = f.readLine()
+  f.close()
+ else
+  stargate = ""
+ end
+ if stargate == nil then
+  stargate = ""
+ end
+ done2 = false
+ while done2 ~=  true do 
+  BT.deleteAllButtons()
+  BT.setF(1,1,51,19,COL)
+  BT.setF(2,2,50,17,CBG)
+  BT.createButton("Back","Back",settings.Back,"" ,3,17,25,17,CR,CR,CB)
+  BT.createButton("Exit","Exit",settings.Exit,"" ,27,17,49,17,CR,CR,CB)
+  BT.write("Peripheral's",51/2-string.len("Peripheral's")/2+1,1,CB,COL)
+  BT.CreateSildeBar(3,3,"AutoFindGate","Automatically find a gate",Settings.AutoFindGate)
+  if Settings.AutoFindGate ~= true then
+   BT.setF(3,5,30,5,CLGR)
+   BT.write("StargateBase: ",3,5,CB,CW)
+   BT.write(stargate,18,5,CB,CLGR)
+   if peripheral.getType(stargate) == "StargateBase" then
+    BT.setF(37,5,36,5,CG)
+   else
+    BT.setF(37,5,36,5,CR)
+   end
+  end 
+  ev = "timer"
+  BT.drawButtons()
+  while ev == "timer" and done2 ~= true do 
+   ev,bt,x,y = os.pullEvent()
+   if ev == "terminate" then 
+    quitProgram()
+   elseif ev == "mouse_click" then
+    BT.checkxy(x,y)
+    BT.checkSlideBar(x,y)
+	Settings.AutoFindGate = BT.getSliderValue("AutoFindGate")
+	setSettings()
+   	if (x >= 18 and x <= 35 and y == 5) and Settings.AutoFindGate ~= true then
+	 BT.write("StargateBase: ",3,5,CB,CW)
+	 BT.drawButtons()
+     term.setBackgroundColor(CLGR)
+     term.setCursorPos(18,5)
+	 BT.write(stargate,18,5,CB,CLGR)
+	 stargate = Read(18,stargate,CLGR,false,true,Settings.PastePasswordAllowed,false,nil,true)
+	 if peripheral.getType(stargate) == "StargateBase" then
+	  sg = {}
+	  sg = peripheral.wrap(stargate)
+	  f = fs.open(dirData.."Peripherals_Stargate","w") 
+      f.writeLine(stargate)
+      f.close()
+	 end
+	elseif Settings.AutoFindGate == true then
+	 local tmpsg = nil 
+	 tmpsg = peripheral.find("StargateBase")
+	 if tmpsg ~= nil then
+	  sg = {}
+	  sg = tmpsg 
+	 else 
+	  BT.drawButtons()
+	 end
+	else
+	 BT.drawButtons()
+	end
+   end
+  end
+ end
+end
+
+function settings.Colors()
+ Menu = "Settings-Colors"
+ 
+ done2 = true
+end
+
+function settings.Other()
+ Menu = "Settings-Other"
+ 
+ done2 = true
+end
+
+function settings.Help()
+ Menu = "Settings-Help"
+ 
+ done2 = true  
+end
+function settings.main()
+ Menu = "Settings-Main"
+ scroll = 1
+ maxScroll = 10
+ BT.deleteAllButtons()
+ BT.setF(1,1,51,19,COL)
+ BT.setF(2,2,50,17,CBG)
+ local pas = ""
+ if Settings.ChangingSettingsReqPass and Settings.PasswordEnabled then
+  pas = RequestPassword(-1,false,0,true,"Settings")
+ end
+  done = false 
+   BT.deleteAllButtons()
+   BT.setF(2,2,50,17,CBG)
+  if Settings.ChangingSettingsReqPass ~= true or Settings.PasswordEnabled ~= true or pas == true or pas == "No Pass"then
+  done = false 
+   while done ~= true do
+   BT.deleteAllButtons()
+   BT.setF(2,2,50,17,CBG)
+   BT.createButton("Exit","Exit",settings.Exit,"" ,3,17,25,17,CR,CR,CB)
+   BT.createButton("Exit program","Exit program (Ctrl-T)",quitProgram,"" ,27,17,49,17,CR,CR,CB)
+   BT.createButton("Security","Security",settings.Security,"" ,3,3,49,5,COtherBT,COtherBT,CB)
+   BT.createButton("Peripherals","Peripherals",settings.Peripherals,"" ,3,7,49,9,COtherBT,COtherBT,CB)
+   BT.createButton("Colors","Colors",settings.Colors,"" ,3,11,49,13,COtherBT,COtherBT,CB)
+   BT.createButton("Other","Other",settings.Other,"" ,3,15,25,15,COtherBT,COtherBT,CB)
+   BT.createButton("Help","Help",settings.Help,"" ,27,15,49,15,COtherBT,COtherBT,CB)
+   BT.drawButtons()
+   done2 = false
+   while done2 ~= true and done ~= true do
+    ev,bt,x,y = os.pullEvent()
+    if ev == "terminate" then 
+     quitProgram()
+     done2 = true
+    elseif ev == "mouse_click" then
+     BT.checkxy(x,y)
+    end
+   end
+  end
+ end
+ MainM()
+end
+ 
+function toggleMiddleButton()
+ if SG.getActivatedChevrons() ~= 0 then 
+  BT.changeDispName("middleBT4","disconnect")
+  if SGbg.Pause == false then
+   BT.changeDispName("middleBT1","Pause")
+   BT.setButton("middleBT1",false)
+  else
+   BT.changeDispName("middleBT1","Continue")
+   BT.setButton("middleBT1",true)
+  end
+  BT.changeDispName("middleBT7","Connect")
+  BT.setButton("middleBT7",SGbg.AutoConnect)
+  stat = true
+ else
+  BT.changeDispName("middleBT1"," ")
+  BT.changeDispName("middleBT4","dial")
+  BT.changeDispName("middleBT7"," ")
+  BT.setButton("middleBT1",false)
+  BT.setButton("middleBT7",false)
+  stat = false
+ end
+ BT.setButton("middleBT2",stat)
+ BT.setButton("middleBT3",stat)
+ BT.setButton("middleBT4",stat)
+ BT.setButton("middleBT5",stat)
+ BT.setButton("middleBT6",stat)
+ BT.drawButtons()
+end
+
+function middleButtonPause()
+ if SG.getActivatedChevrons() == 0 or button ~= 1 then
+  middleButton()
+ else
+  SGbg.Pause = not(SGbg.Pause)
+  toggleMiddleButton()
+ end
+end
+
+function middleButtonConnect()
+ if SG.getActivatedChevrons() == 0 or button ~= 1 then
+  middleButton()
+ else
+  SGbg.AutoConnect = not(SGbg.AutoConnect)
+ end
+end
+
+function middleButton()
+ if SG.getActivatedChevrons() ~= 0 and button == 1 then 
+  stat = pcall(SG.disconnect)
+  stat = pcall(SG.deactivateAllChevrons)
+  if stat == true then
+   DispMsg("disconnecting",CG)
+   sleep(0.8) 
+  else
+   DispMsg("couldn't disconnect",CR)
+  end
+ else
+  --gui
+  if sg ~= nil then
+   Dial()
+   if ans[1] == true then 
+    if ans[2] == 0 then
+     DispMsg(" ",CB)
+    else
+     DispMsg("dialling to: "..ans[2],CB) 
+ 	 if not(fs.exists(dirData.."log/day="..os.day().." time="..os.time()..".log")) then
+	  f = fs.open(dirData.."log/day="..os.day().." time="..os.time()..".log","w")
+	  f.writeLine("dialled to:")
+	  f.writeLine("Address:")
+	  f.writeLine(ans[2])
+	  f.close()
+	 end
+    end
+   else
+    DispMsg(ans[2],CR)
+   end
+  else
+   DispMsg("No stargate connected",CR)
+  end
+ end
+end
+
+
+function bgr()
+end
+
+function favorite()
+ f = fs.open(dirAddress..nc.."/"..curAddress,"r")
+ local nm = f.readLine()
+ local fav = f.readLine()
+ f.close()
+ if fav == "true" then fav = false
+ elseif fav == "false" then fav = true end
+ BT.setButton("fav",fav)
+ f = fs.open(dirAddress..nc.."/"..curAddress,"w")
+ f.writeLine(nm)
+ f.writeLine(fav)
+ f.close()
+end
+
+function favorite2()
+ if fav == true then fav = false
+ elseif fav == false then fav = true end
+ BT.setButton("fav2",fav)
+ BT.drawButtons()
+end
+
+
+function addAddress()
+ local pas = ""
+ if Settings.AddAddressReqPass and Settings.PasswordEnabled then
+  pas = RequestPassword(-1,false,1,true,"Add address")
+ end
+ if pas == "No Pass" or pas == true or Settings.AddAddressReqPass ~= true or Settings.PasswordEnabled ~= true then
+  if filter == "favorite" then fav = true
+  else fav = false
+  end
+  newAddress = "" newName = ""
+  done2 = false 
+  --BT.setF(1,1,51,19,CGR)
+  BT.deleteAllButtons()
+  BT.createButton("bg","",bgr,"" ,11,5,41,13,CGR,CGR,CB)
+  BT.createButton("bg2","",bgr,"" ,13,6,39,9,CLGR,CLGR,CB)
+  BT.createButton("fav2","favorite",favorite2,"" ,11,14,41,16,CY,CB,CC)
+  BT.setButton("fav2",fav)
+  BT.drawButtons()
+  while done2 ~= true do 
+   if string.len(newAddress) == 9 then
+    nc = 9
+   elseif string.len(newAddress) == 7 then
+    nc = 7
+   else
+    nc = "invalid"
+   end
+   BT.setTextColor(CB)
+   dr = dirAddress..nc.."/"
+   if string.len(newAddress) ~= nc or fs.exists(dr..newAddress)  
+   then 
+    bgc = CR
+    addressSave = false
+   else
+    bgc = CBl
+    addressSave = true
+   end
+   BT.setF(13,11,25,12,bgc)
+   BT.write("save",18,12,CB,bgc)
+   BT.setF(27,11,39,12,CR)
+   BT.write("cancel",31,12,CB,CR)
+   BT.setBackgroundColor(CLGR)
+   for i = 1,9 do
+    BT.write(" ",21+i,6,CB,CLGR)
+   end
+   BT.write("Address: "..newAddress,13,6,CB)
+   for i = 1,13  do
+    BT.write(" ",18+i,8,CB,CLGR)
+   end
+   BT.write("Name: "..newName,13,8,CB)
+   BT.draw()
+   ev,button,x,y = os.pullEvent("mouse_click")
+   if ev == "terminate" then 
+    quitProgram()
+    done2 = true
+   elseif ev == "mouse_click" then
+    done2 = not(BT.checkxy(x,y))
+    if y == 6 and x >= 22 and x <= 30 then
+     BT.setBackgroundColor(CW)
+     for i = 1,7 do
+      BT.write(" ",21+i,6,CB,CW)
+     end
+     BT.write("++",29,6,CLGR,CW)
+     BT.setTextColor(CB)
+     term.setTextColor(CB)
+     term.setCursorPos(22,6)
+     newAddress = Read(9,newAddress,CW,true,true,true)
+    end 
+    if y == 8 and x >= 19 and x <= 31 then
+     BT.setBackgroundColor(CLGR)
+     BT.setBackgroundColor(CW)
+     term.setCursorPos(19,8)
+     BT.write("             ")
+     term.setCursorPos(19,8)
+     newName = Read(13,newName,CW,false,true,true)
+    end 
+    if x >= 27 and x <= 39 and y >= 11 and y <= 12 then
+     done2 = true
+    end 
+    if x >= 13 and x <= 25 and y >= 11 and y <= 12  then
+     if addressSave == true then
+      if not(fs.exists(dr..newAddress)) then  
+       f = fs.open(dr..newAddress,"w")
+       f.writeLine(newName)
+       f.writeLine(fav)
+       f.close()
+       done2 = true
+      end
+     end
+    end 
+   end
+  end
+ end
+ BT.deleteAllButtons()
+end
+
+function editAddress(num)
+ done2 = false
+ local pas = ""
+ if Settings.EditAddressReqPass and Settings.PasswordEnabled then
+  pas = RequestPassword(-1,false,1,true,"Edit address")
+ end
+ if pas == "No Pass" or pas == true or Settings.EditAddressReqPass ~= true or Settings.PasswordEnabled ~= true then
+  --BT.setF(1,1,51,19,CGR)
+  BT.deleteAllButtons()
+  BT.createButton("bg","",bgr,"" ,11,5,41,13,CGR,CGR,CB)
+  BT.createButton("bg2","",bgr,"" ,13,6,33,9,CLGR,CLGR,CB)
+  BT.createButton("fav","favorite",favorite,"" ,11,14,41,16,CY,CB,CC)
+  if sorting == "F" or addressListSearch[1] == nil then
+   if addressListFilter[num]["favorite"] == "true" then
+    BT.toggleButton("fav")
+   end
+   curName = addressListFilter[num]["name"]
+   curAddress = addressListFilter[num]["address"]
+  else
+   if addressListSearch[num]["favorite"] == "true" then
+    BT.toggleButton("fav")
+   end
+   curName = addressListSearch[num]["name"]
+   curAddress = addressListSearch[num]["address"]
+  end
+  newName = curName  newAddress = curAddress 
+  nameSave = false  addressSave = false  delAD = 1
+  while done2 ~= true do 
+   BT.drawButtons() 
+   BT.setTextColor(CB)
+   BT.setF(13,11,33,12,CR)
+   if delAD == 2 then
+    BT.write("press again to",17,11,CB,CR)
+   end
+   BT.write("delete",21,12,CB,CR)
+   BT.write("Edit Menu",18,5,CB,CGR)
+   if sorting == "F" or addressListSearch[1] == nil then
+    nc = string.len(addressListFilter[num]["address"])
+   else
+    nc = string.len(addressListSearch[num]["address"])
+   end
+   BT.setBackgroundColor(CLGR)
+   BT.write("Address: "..newAddress,13,6,CB,CLGR)
+   term.setCursorPos(13,8)
+   BT.write("Name: "..newName,13,8,CB,CLGR)
+   if curAddress ~= newAddress then
+    dr = dirAddress..nc.."/"
+    if string.len(newAddress) ~= nc or fs.exists(dr..newAddress) then 
+     SColor = CR
+     addressSave = false
+    else
+     SColor = CBl
+     addressSave = true
+    end
+   else 
+    SColor = CLGR
+    addressSave = false
+   end
+   term.setCursorPos(36,6)
+   BT.write("save",36,6,CB,SColor)
+   if curName ~= newName then
+    SColor = CBl
+    nameSave = true
+   else 
+    SColor = CLGR
+    nameSave = false
+   end
+   term.setCursorPos(36,8)
+   BT.write("save",36,8,CB,SColor)
+   BT.draw()
+   ev,button,x,y = os.pullEvent("mouse_click")
+   if ev == "terminate" then 
+    quitProgram()
+    done2 = true
+   elseif ev == "mouse_click" then
+    done2 = not(BT.checkxy(x,y))
+    if y == 6 and x >= 22 and x <= 21+nc then
+     BT.write("old: "..curAddress,17,7,CB,CLGR)
+     BT.setBackgroundColor(CW)
+     BT.draw()
+     for i = 1,nc do
+      BT.write(" ",21+i,6,CB,CW)
+     end
+     term.setCursorPos(22,6)
+     newAddress = Read(nc,newAddress,CW,true,true,true)
+    end 
+    if y == 6 and x >= 36 and x <= 39 then
+     if addressSave == true then 
+      dr = dirAddress..nc.."/"
+      fs.move(dr..curAddress,dr..newAddress)
+      if fs.exists(dr..newAddress) then
+       curAddress = newAddress 
+      end
+     end
+    end
+    if y == 8 and x >= 19 and x <= 31 then
+     BT.setBackgroundColor(CLGR)
+     BT.write("old: "..curName,14,9,CB,CLGR)
+     BT.draw()
+     BT.setBackgroundColor(CW)
+     BT.write("             ",19,8,CB,CW)
+     term.setCursorPos(19,8)
+     newName = Read(13,newName,CW,false,true,true)
+    end 
+    if y == 8 and x >= 36 and x <= 39 then
+     if nameSave == true then 
+      curName = newName
+      f = fs.open(dirAddress..nc.."/"..curAddress,"r")
+      f.readLine()
+      fav = f.readLine()
+      f.close()
+      f = fs.open(dirAddress..nc.."/"..curAddress,"w")
+      f.writeLine(newName)
+      f.writeLine(fav )
+      f.close()
+     end
+    end
+    if y >= 11 and y <= 12 and x >= 13 and x <= 33 then
+     if delAD == 2 then
+ 	  if Settings.DelAddressReqPass and Settings.PasswordEnabled then
+	   pas = RequestPassword(-1,false,4,true,"Delete address")
+	   done2 = true
+      end
+      if pas == "No Pass" or pas == true or Settings.DelAddressReqPass ~= true or Settings.PasswordEnabled ~= true then
+       fs.delete(dirAddress..nc.."/"..curAddress)
+       done2 = true
+ 	   delAD = 1
+	  end
+     else
+      delAD = 2
+     end
+    else
+     delAD = 1
+    end
+    BT.setF(13,11,33,12,CR)
+   end
+  end
+ end
+ BT.deleteAllButtons()
+end
+
+function getAddresses(filter)
+ local addressList = {}
+ local ADC = {}
+ local BadAddress = 0
+ for i = 0,1 do
+  addressList[7+2*i] = {} ADC[7+2*i] = 0
+  if fs.exists(dirAddress..7+2*i) then
+   for num,address in pairs(fs.list(dirAddress..7+2*i)) do
+    if string.len(address) == 7+2*i and isValidAddress(address) then
+     f = fs.open(dirAddress..7+2*i.."/"..address,"r")
+     addressList[7+2*i][num-BadAddress] = {}
+     addressList[7+2*i][num-BadAddress]["address"] = address
+     addressList[7+2*i][num-BadAddress]["name"] = f.readLine()
+     addressList[7+2*i][num-BadAddress]["favorite"] = f.readLine()
+     f.close()
+	 ADC[7+2*i] = num - BadAddress
+	else 
+	 BadAddress = BadAddress + 1
+	end
+   end
+  end
+ end
+ return({ADC,addressList})
+end
+
+function swpage(num)
+ page = page + num
+end
+
+function filterFunc()
+ page = 0
+ if button == 1 then 
+  if filter == "all" then
+   filter = "7 chevrons"
+  elseif filter == "7 chevrons" then
+   filter = "9 chevrons"
+  elseif filter == "9 chevrons" then
+   filter = "favorite" 
+  else 
+   filter = "all"
+  end
+ elseif button == 2 or button == -1 then 
+  if filter == "7 chevrons" then
+   filter = "all"
+  elseif filter == "9 chevrons" then
+   filter = "7 chevrons"
+  elseif filter == "favorite" then
+   filter = "9 chevrons"
+  else 
+   filter = "favorite"
+  end
+ elseif button == 3 then
+  filter = "all"
+ end
+end
+
+
+
+function exit()
+ exitv = true
+ done = true
+end
+
+function goBack()
+ back = true
+end
+
+function optionsSelectAddress()
+ BT.deleteAllButtons()
+ done2 = false
+ if y > 14 then y = 14 end
+ if x > 39 then x = 39 end
+ while done2 ~= true do
+  BT.setF(x,y,x+10,y+2,CGR)
+  BT.setF(x+1,y+1,x+9,y+1,CGR)
+  BT.createButton("Export","Export",Export,"" ,x+1,y+1,x+9,y+1,CR,CR,CB)
+  BT.drawButtons()
+  while done2 ~= true do
+   local ev,button,xev,yev = os.pullEvent("mouse_click")
+   if ev == "terminate" then 
+    quitProgram(1)
+	done2 = true
+   elseif ev == "mouse_click" then
+    if xev < x or yev < y or xev > x+10 or yev > y+2  then done2 = true end
+    BT.checkxy(x,y)
+   end
+  end
+ end
+ BT.deleteAllButtons()
+end
+
+function deleteAddress(address)
+ nc = string.len(address)
+ if fs.exists(dirAddress..nc.."/"..address) then
+  fs.delete(dirAddress..nc.."/"..address)
+ end
+end
+
+function deleteAllSelectedAddresses()
+ local pas = ""
+ deletePress = true
+ if delAD ~= 2 then delAD = 1 end
+ if delAD == 2 then
+  if Settings.DelAddressReqPass and Settings.PasswordEnabled then
+   pas = RequestPassword(-1,false,4,true,"Delete address")   
+  end
+  if pas == "No Pass" or pas == true or Settings.DelAddressReqPass ~= true or Settings.PasswordEnabled ~= true then   
+   table.foreach(selectAddresses,deleteAddress)
+   clearSelection()
+   done2 = true
+   delAD = 1
+  end
+ else 
+  delAD = 2
+ end
+end
+
+function doesAddressStillExist(address)
+ nc = string.len(address)
+ if fs.exists(dirAddress..nc.."/"..address) then
+  selectAddresses[address] = true
+ end
+end
+
+function getNumSelectAddress()
+ local function addNumSelectAddresses() numSelectAddresses = numSelectAddresses + 1 end
+ numSelectAddresses = 0
+ table.foreach(selectAddresses,addNumSelectAddresses)
+ return(numSelectAddresses)
+end
+
+function clearSelection()
+ selectAddresses = {}
+end
+
+function selectAllAdresses()
+ if addressListFilter ~= nil then
+  for i = 1,table.getn(addressListFilter) do
+   selectAddresses[addressListFilter[i]["address"]] = true
+  end
+ end
+end
+ 
+function SelectAddress(num) 
+ if button == 1 then
+  if getNumSelectAddress() == 0 then
+   done = true
+   if sorting == "F" or addressListSearch[1] == nil then
+    SAddress = addressListFilter[num]["address"]
+   else
+    SAddress = addressListSearch[num]["address"]
+   end
+  else 
+   if sorting == "F" or addressListSearch[1] == nil then
+    if selectAddresses[addressListFilter[num]["address"]] == nil then
+     selectAddresses[addressListFilter[num]["address"]] = true
+    else
+     selectAddresses[addressListFilter[num]["address"]] = nil
+    end
+   else
+    if selectAddresses[addressListSearch[num]["address"]] == nil then
+     selectAddresses[addressListSearch[num]["address"]] = true
+    else
+     selectAddresses[addressListSearch[num]["address"]] = nil
+    end
+   end
+  end
+ elseif button == 2 then
+  if getNumSelectAddress() == 0 then
+   editAddress(num)
+  else
+   optionsSelectAddress()
+  end
+ elseif button == 3 then
+  if sorting == "F" or addressListSearch[1] == nil then
+   if selectAddresses[addressListFilter[num]["address"]] == nil then
+    selectAddresses[addressListFilter[num]["address"]] = true
+   else
+    selectAddresses[addressListFilter[num]["address"]] = nil
+   end
+  else
+   if selectAddresses[addressListSearch[num]["address"]] == nil then
+    selectAddresses[addressListSearch[num]["address"]] = true
+   else
+    selectAddresses[addressListSearch[num]["address"]] = nil
+   end
+  end
+ end
+end
+
+function switchSorting()
+ if sorting == "F" then
+  sorting = "S"
+ else
+  sorting = "F"
+ end
+end
+
+function getSearchResults()
+ if Word == "" or Word == nil then
+  addressListSearch = {}
+ else
+  counter = 1
+  counter2 = 1
+  addressListSearch = {}
+  while addressListFilter[counter] ~= nill do
+   MatchAdr = string.match(addressListFilter[counter]["address"],Word)
+   MatchName = string.match(addressListFilter[counter]["name"],Word)
+   if (MatchAdr ~= nil and MatchAdr ~= "" and MatchAdr ~= " " and MatchAdr ~= "  ") or (MatchName ~= nil and MatchName ~= "" and MatchName ~= " " and MatchName ~= "  ")  then 
+    addressListSearch[counter2] = {}
+    addressListSearch[counter2]["address"] = addressListFilter[counter]["address"]
+    addressListSearch[counter2]["name"] = addressListFilter[counter]["name"]
+    addressListSearch[counter2]["favorite"] = addressListFilter[counter]["favorite"]
+    counter2 = counter2 + 1
+	else
+   end
+   counter = counter + 1
+  end 
+  addressCountSearch = counter2
+  if addressListSearch[1] == nil then
+   addressListSearch[1] = {}
+   addressListSearch[1]["name"] = "No Matching Addresses Found"
+   addressCount = 0
+  end
+ end
+end
+
+function searchAddress()
+ if Word == nil then Word = ""  end
+ BT.write("            ",20,2,CB,CW)
+ BT.draw()
+ term.setCursorPos(20,2)
+ Word = Read(12,Word,CW,false,true,true)
+ page = 0
+ getSearchResults()
+end
+
+function list()
+ selectAddresses = {}
+ addressListSearch = {}
+ addressCountSearch = 0
+ page = 0 done = false delAD = 1 deletePress = false Word = nil
+ if fs.exists(dirData.."FilterAndSorting") then
+  f = fs.open(dirData.."FilterAndSorting","r")
+  filter = f.readLine()
+  sorting = f.readLine()
+  f.close()
+ else
+  f = fs.open(dirData.."FilterAndSorting","w")
+  filter = f.writeLine("all")
+  sorting = f.writeLine("F")
+  f.close()
+  filter = "all"
+  sorting = "F"
+ end 
+ while done ~= true do  
+  BT.setF(1,1,51,19,COL)
+  BT.setF(2,4,50,17,CBG)
+  local ADC = {}
+  local tmpVal = getAddresses()
+  ADC = tmpVal[1]
+  addressList = tmpVal[2]
+  newSelectAddresses = selectAddresses
+  selectAddresses = {}
+  table.foreach(newSelectAddresses,doesAddressStillExist)
+  BT.deleteAllButtons()
+  if sorting == "F" then
+   BT.createButton("filter",filter,filterFunc,"" ,19,2,32,2,CGR,CLGR,CB)
+  else
+   if Word == nil or Word == "" then
+    BT.createButton("search","search",searchAddress,"" ,19,2,32,2,CGR,CW,CLGR)
+   else
+    BT.createButton("search",Word,searchAddress,"" ,19,2,32,2,CW,CW,CB)
+   end
+  end
+  BT.createButton("sorting",sorting,switchSorting,"" ,33,2,33,2,CGR,CLGR,CGR)
+  if getNumSelectAddress() == 0 then
+   BT.createButton("addAddress","Add address",addAddress,"" ,35,2,49,2,CL,CG,CB)
+   BT.createButton("exit","exit",exit,"" ,19,17,33,17,CR,CR,CB)
+  else
+   BT.createButton("select all:","select all:",selectAllAdresses,"" ,3,2,16,2,CLGR,CLGR,CB)
+   BT.createButton("delete"," delete".." ",deleteAllSelectedAddresses,"" ,35,2,49,2,CR,CR,CB)
+   if delAD == 2 then 
+    BT.changeDispName("delete","press again") 
+   end
+   BT.createButton("Clear Selection","Clear Selection",clearSelection,"" ,18,17,34,17,CR,CR,CB)
+  end
+  addressListFilter = {}
+  if filter == "all"  then 
+   addressCount = ADC[7] + ADC[9]
+   for i = 1,ADC[7] do
+    addressListFilter[i] = addressList[7][i]
+   end
+   for i = 1,ADC[9] do
+    addressListFilter[ADC[7]+i] = addressList[9][i]
+   end
+  elseif filter == "7 chevrons"  then
+   addressCount = ADC[7]
+   for i = 1,ADC[7] do
+    addressListFilter[i] = addressList[7][i]
+   end
+  elseif filter == "9 chevrons" then
+   addressCount = ADC[9]  
+   for i = 1,ADC[9] do
+    addressListFilter[i] = addressList[9][i]
+   end
+  elseif filter == "favorite" then
+   addressCount = 0
+   for i = 1,ADC[7] do
+    if addressList[7][i]["favorite"] == "true" then
+     addressCount = addressCount + 1
+     addressListFilter[addressCount] = addressList[7][i]
+    end
+   end
+   for i = 1,ADC[9] do
+    if addressList[9][i]["favorite"] == "true" then
+     addressCount = addressCount + 1
+     addressListFilter[addressCount] = addressList[9][i]
+    end
+   end
+  end
+  getSearchResults()
+  if page > 0 then 
+   BT.createButton("ppage","<--------",swpage,-1,3,17,15,17,CLBl,CBl,CB)
+  else
+   BT.setF(3,17,15,17,CBG)
+  end
+  if (addressCount > 9*(page+1) and (sorting == "F" or addressListSearch[1] == nil)) or (sorting == "S" and addressCountSearch > 9*(page+1) ) then 
+   BT.createButton("npage","-------->",swpage, 1,37,17,49,17,CLBl,CBl,CB)
+  else
+   BT.setF(37,17,49,17,CBG)
+  end
+  xf = 16
+  yf = 4
+  fa = {0,2,4}
+  for i = 1,3 do 
+   for j = 0,2 do 
+    counter = i+j+fa[i]+9*page
+	if sorting == "F" or addressListSearch[1] == nil then
+	 if addressListFilter[1] == nil then 
+	  BT.createButton("bt1","No addresses found",addAddress,"" ,8,6,45,6,CGR,CBG,CGR)
+	  BT.createButton("bt2",'Press "Add address" to add a address',addAddress,"" ,8,7,45,7,CGR,CBG,CGR)
+	 end
+     if addressListFilter[counter] ~= nill then  
+      name = addressListFilter[counter]["name"] 
+      adr = addressListFilter[counter]["address"]
+      --roundDown(num, idp)
+	  local boxColor = COtherBT
+      if selectAddresses[addressListFilter[counter]["address"]] == true then 
+	   boxColor = CC
+	  end
+      BT.createButton("bt"..counter,adr,SelectAddress,counter,3+xf*j,5+yf*(i-1),17+xf*j,7+yf*(i-1),CGR,boxColor,CB)
+      BT.addExtraText("bt"..counter,name)
+	 else
+     end
+	else 
+     if addressListSearch[counter] ~= nill then  
+	  if addressListSearch[1]["name"] ~= "No Matching Addresses Found" then
+       name = addressListSearch[counter]["name"] 
+       adr = addressListSearch[counter]["address"]
+       --roundDown(num, idp)
+ 	   local boxColor = COtherBT
+       if selectAddresses[addressListSearch[counter]["address"]] == true then 
+	    boxColor = CC
+	   end
+       BT.createButton("bt"..counter,adr,SelectAddress,counter,3+xf*j,5+yf*(i-1),17+xf*j,7+yf*(i-1),CGR,boxColor,CB)
+       BT.addExtraText("bt"..counter,name)
+	  else
+	   BT.createButton("bt1","No matching addresses found",searchAddress,"" ,13,6,39,6,CGR,CBG,CGR)
+      end
+	 end
+	end
+   end
+  end
+  BT.drawButtons()
+  done2 = false
+  while done2 ~= true do 
+   ev,button,x,y = os.pullEvent()
+   if deletePress ~= true then delAD = 1 end
+   --clicks
+   if ev == "terminate" then 
+    quitProgram(1)
+	done2 = true
+   elseif ev == "mouse_click" then
+    done2 = BT.checkxy(x,y)
+   --scroll
+   elseif ev == "mouse_scroll" and Settings.ScrollControl then
+    if x >=2 and y >= 4 and x <= 50 and y <= 17 then
+     if button == -1 then
+      if page > 0 then
+       swpage(-1)
+       done2 = true
+      end
+     elseif button == 1 then
+      if (addressCount > 9*(page+1) and (sorting == "F" or addressListSearch[1] == nil)) or (sorting == "S" and addressCountSearch > 9*(page+1) ) then 
+       swpage(1)
+       done2 = true
+      end
+     end
+	elseif x >= 19 and x <= 32 and y == 2 and sorting == "F" then
+	 filterFunc()
+	 done2 = true
+    end
+   --keys
+   elseif ev == "key" and Settings.KeyControl then
+    if button == 203 then
+     if page > 0 then
+      swpage(-1)
+      done2 = true
+     end
+    elseif button == 205 then
+     if (addressCount > 9*(page+1) and (sorting == "F" or addressListSearch[1] == nil)) or (sorting == "S" and addressCountSearch > 9*(page+1) ) then 
+      swpage(1)
+      done2 = true
+     end
+	elseif button == 200 and sorting == "F" then
+	 button = 2
+	 filterFunc()
+	 done2 = true
+	elseif button == 208 and sorting == "F" then
+	 button = 1
+	 filterFunc()
+	 done2 = true
+    end
+   end
+   BT.drawButtons()
+  end
+ end
+end
+
+function Dial()
+ exitv = false
+ ans = {false,""}
+ local pas = ""
+ if Settings.DialingReqPass and Settings.PasswordEnabled then
+  pas = RequestPassword(-1,false,4,true,"Dial")
+ end
+ if pas == "No Pass" or pas == true or Settings.DialingReqPass ~= true or Settings.PasswordEnabled ~= true then
+  BT.deleteAllButtons()
+  Menu = "Dial"
+  if fs.exists(dirData.."Dialer") then
+   f = fs.open(dirData.."Dialer","r")
+   Mode = f.readLine()
+   f.close()
+  else
+   Mode = "list"
+   f = fs.open(dirData.."Dialer","w")
+   f.writeLine("list")
+   f.close()
+  end
+  if Mode == "list" then 
+   SAddress = 0
+   list()
+  else
+   
+  end
+  ans = {false,"error: couldn't dial "..SAddress}
+  if exitv == true then
+   ans[2] = " "
+  else
+   if string.len(SAddress) == 7 or string.len(SAddress) == 9 then
+    ThisGate = SG.getStargateAddressString()
+    if SAddress == ThisGate then
+     ans[2] = "you must be very lonely"
+    --elseif SGData.isDialing or SGData.isConnected then 
+    --elseif SG.getActivatedChevrons() == 9 then
+    -- ans[2] = "stargate is busy" 
+    else
+     ans = SG.dial(SAddress,true)
+    end
+   else
+    ans[2] = "invalid address"
+   end
+  end
+  MainM()
+ else
+ MainM()
+ end
+end
+
+
+function getLog()
+ LogList = {}
+ if fs.exists(dirData.."log") then
+  BadData = 0
+  for num,logData in pairs(fs.list(dirData.."log")) do
+   day = ""
+   time = ""
+   logDataTbl = splitWord(logData)
+   local counter = 5
+   while logDataTbl[counter] ~= " " and logDataTbl[counter] ~= "t" and logDataTbl[counter] ~= nil do
+	day = day..logDataTbl[counter]
+	counter = counter + 1
+   end
+   counter = counter + 6
+   while logDataTbl[counter] ~= " " and logDataTbl[counter] ~= nil and logDataTbl[counter] ~= "l"  do
+	time = time..logDataTbl[counter]
+	counter = counter + 1
+   end
+   time = time:sub(1,string.len(time)-1)
+   if day ~= "" and time ~= "" then
+	f = fs.open(dirData.."log/"..logData,"r")
+    LogList[num-BadData] = {}
+    LogList[num-BadData]["time"] = tonumber(time)
+    LogList[num-BadData]["day"] = tonumber(day)
+    LogList[num-BadData]["action"] = f.readLine()
+	f.readLine()
+	LogList[num-BadData]["address"] = f.readLine()
+    f.close()
+   else
+	BadData = BadData + 1
+   end
+  end
+ end
+end
+
+function deleteLog()
+ fs.delete(dirData.."log")
+end
+
+function log()
+ --gui
+ Menu = "Log"
+ scroll = 0
+ back = false
+ while back ~= true do
+  getLog()
+  BT.setF(1,1,51,19,CGR)
+  BT.setF(2,2,50,17,CW)
+  BT.setF(2,16,50,17,CGR)
+  BT.setF(3,2,3,15,CGR)
+  BT.setF(2,3,50,3,CGR)
+  BT.setP(2,2,CGR)
+  BT.deleteAllButtons()
+  term.setCursorBlink(false)
+  BT.write("day:",4,2,CB,CW)
+  BT.write("time:",12,2,CB,CW)
+  term.setCursorPos(2,2)
+  BT.createButton(" delete log "," delete log ",deleteLog,"" ,11,17,24,17,CR,CR,CB)
+  BT.createButton(" back "," back ",goBack,"" ,2,17,7,17,CR,CR,CB)
+  leng = #LogList 
+  for y = 4,15 do
+   counter = y-3+scroll
+   counter = leng-(y-4+scroll)
+   if (counter+scroll)/2 == roundDown((counter+scroll)/2,0) then logColor = CW else logColor = CLGR end
+   BT.setF(2,y,50,y,logColor) BT.setF(3,2,3,15,CGR)
+   if LogList[counter] ~= nil then
+    BT.write(LogList[counter]["day"],4,y,CB,logColor)
+	if string.len(textutils.formatTime(LogList[counter]["time"],true)) == 5 then 
+	 BT.write(textutils.formatTime(LogList[counter]["time"],true),12,y,CB,logColor)
+	else
+	 BT.write("0"..textutils.formatTime(LogList[counter]["time"],true),12,y,CB,logColor)
+	end
+	BT.write(LogList[counter]["action"].." "..LogList[counter]["address"],19,y,CB,logColor)
+   end
+  end
+  BT.drawButtons()
+  ev,bt,x,y = os.pullEvent()
+  if ev == "terminate" then 
+   quitProgram()
+  elseif ev == "mouse_click" then
+   BT.checkxy(x,y)
+  elseif ev == "mouse_scroll" and Settings.ScrollControl then
+   if x >=2 and y >= 4 and x <= 50 and y <= 15 then
+    if bt == -1 and scroll ~= 0 then
+     scroll = scroll - 1
+    elseif bt == 1 and scroll+12 < leng then
+     scroll = scroll + 1
+    end
+   end
+  end
+ end
+ MainM()
+end
+
+function ReDial()
+ if not(SGData.isConnected) or not(SGData.isDialing) then
+  return(SG.dial(LastAddress,true))
+ else
+  return("busy")
+ end
+end
+
+function Iris()
+ if SG.getIrisType() ~= nil then
+  if SG.getIrisState() == "Closed" or SG.getIrisState() == "Closing" then
+   if Settings.OpeningIrisReqPas and Settings.PasswordEnabled then 
+    if RequestPassword(-1,false,4,true,"Open Iris") == true then
+     SG.openIris()
+	  DispMsg("Opening iris",CB)
+	 MainM()
+	else
+	 MainM() 
+    end
+   else
+    SG.openIris()
+	DispMsg("Closing iris",CB)
+   end
+  else 
+   SG.closeIris()
+  end
+ end
+end
+
+
+function bgProces()
+ while true do
+  if Menu == "Main" or Menu == "lockdown" or (Menu == "RequestPass" and OldMenu == "Main") then 
+   --timestat
+   --stat
+   if Menu ~= "lockdown" then
+    toggleMiddleButton()
+   end
+  end
+  sleep(0.2)
+ end
+end
+
+function click()
+ while true do
+  ev,button,x,y = os.pullEvent("mouse_click")
+  if ev == "terminate" then 
+   Menu = "lockdown"
+   quitProgram(4)
+   MainM()
+  elseif ev == "mouse_click" then
+   BT.checkxy(x,y)
+  end
+ end
+end
+
+function chevronLock()
+ while true do
+  event,address = os.pullEvent("sgOutgoing")
+  event,Chevron = os.pullEvent("sgChevronEncode")
+
+ end
+end
+
+function sgIncoming()
+ oldAddr = SGData.Connection.Address
+ while true do
+  if Menu == "Main" or Menu == "lockdown" then
+   if SGData.Connection.Address ~= oldAddr then
+     BT.setTextColor(CB)
+	 BT.setBackgroundColor(CW)
+     term.setCursorPos(11,4)
+	 
+	 if SGData.Connection.Address ~= nil and (SGData.isConnected or SGData.isDialing)  then
+	  BT.write(SGData.Connection.Address.."         ")
+	 else
+	  BT.write("none         ")
+	 end
+    --DispMsg("incoming "..SGData.Connection.Address,CB)
+   end
+  end
+  sleep(0.2)
+ end
+end
+
+function chevronLock2()
+ oldC = SGData.Connection.Chevron oldStat = SGData.Status
+ while true do
+  if Menu == "Main" or Menu == "lockdown" or oldC ~= SGData.Connection.Chevron or oldStat ~= SGData.Status then
+   oldC = SGData.Connection.Chevron oldStat = SGData.Status
+   if SGData.isDialing then
+    if SGData.Connection.InOrOut == "incoming" then
+	 DispMsg("incoming "..SGData.Connection.Address,CB)
+	else
+	 if SGData.Connection.Chevron ~= nil then
+      DispMsg("chevron "..SGData.Connection.Chevron.." encoded",CB)
+	 end
+	end
+   elseif SGData.isConnected  then
+    if SGData.Connection.InOrOut == "incoming" then
+	 --add to log
+	 DispMsg("dialed form: "..SGData.Connection.Address,CB)
+	else
+	 if SGData.Connection.Chevron ~= nil then
+      DispMsg("chevron "..SGData.Connection.Chevron.." locked",CB)
+	 end
+	end
+   end
+  end
+  sleep(0.4)
+ end
+end
+
+function RecEvents()
+ oldAddr = SGData.Connection.Address EV = {}
+ while true do
+  RecEvents = {}
+  ID,RecEvents = rednet.receive(protocol.."Event")
+  if RecEvents["event"] == "sgIncoming" then 
+   EV["data"] = RecEvents["data"] EV["event"] = RecEvents["event"] Chevron = RecEvents["chevron"]
+   if Menu == "Main" or Menu == "lockdown" then
+    if SGData.isDialing then
+     DispMsg("chevron "..Chevron.." encoded",CB)
+    elseif SGData.isConnected  then
+     DispMsg("chevron "..Chevron.." locked",CB)
+    end
+   end
+  elseif RecEvents["event"] == "sgOutgoing" then
+   EV["data"] = RecEvents["data"] EV["event"] = RecEvents["event"] Chevron = RecEvents["chevron"]
+   if Menu == "Main" or Menu == "lockdown" then
+    if SGData.isDialing then
+     DispMsg("chevron "..Chevron.." encoded",CB)
+    elseif SGData.isConnected  then
+     DispMsg("chevron "..Chevron.." locked",CB)
+    end
+   end
+  elseif RecEvents["event"] == "sgWormholeOpening" then
+   if not(fs.exists(dirData.."log/day="..os.day().." time="..os.time()..".log")) then
+	f = fs.open(dirData.."log/day="..os.day().." time="..os.time()..".log","w")
+	f.writeLine(EV["event"]..":")
+	f.writeLine("Address:")
+	f.writeLine(EV["data"])
+	f.close()
+   end
+  end
+ end
+end
+
+
+function sgStayOpen()
+ while true do
+  timer = 0
+  os.pullEvent("sgWormholeOpening")
+  while SGData.isConnected do
+   timer = timer + 1 --303 sec to stay open
+   sleep(1)
+  end
+ end
+end
+
+function clearMSG()
+ clearMSGNum = 0
+ while true do 
+  if curMSG ~= newMSG then
+   curMSG = newMSG clearMSGNum = 0
+  elseif clearMSGNum == 4 then
+   if Menu == "Main" or Menu == "lockdown" or (Menu == "RequestPass" and OldMenu == "Main") then
+    BT.setBackgroundColor(CBG)
+    term.setCursorPos(11,7)
+    BT.write("                               ")
+   end
+ --  if mon["DispMsg"] ~= nil then
+  --  mon["DispMsg"].setBackgroundColor(CBG)
+  --  mon["DispMsg"].setCursorPos(1,2)
+  --  mon["DispMsg"].write("                                    ")
+  -- end
+  else 
+   clearMSGNum = clearMSGNum + 1
+  end
+  sleep(1)
+ end
+end
+
+
+--TODO: needs some editing
+function StargateMon()
+ mon = {}
+ mon["StargatePicture"] = {}
+ while true do
+ --mon["StargatePicture"][1] = peripheral.wrap("monitor_1")
+  if mon["StargatePicture"][1] ~= nil or mon["StargatePicture"][2] ~= nil then 
+   local function setP(x,y,bgc)
+    for i = 1,#mon["StargatePicture"] do
+	 if mon["StargatePicture"][i] ~= nil then
+	  mon["StargatePicture"][i].setTextScale(0.8)
+      mon["StargatePicture"][i].setBackgroundColor(bgc)
+      mon["StargatePicture"][i].setCursorPos(x,y) 
+      mon["StargatePicture"][i].write(" ")
+	 end
+	end
+   end
+  
+   local function setF(x1,y1,x2,y2,bgc)
+    for i = 1,#mon["StargatePicture"] do
+	 if mon["StargatePicture"][i] ~= nil then
+      mon["StargatePicture"][i].setBackgroundColor(bgc)
+      for x = x1,x2 do
+       for y = y1,y2 do
+        mon["StargatePicture"][i].setCursorPos(x,y) 
+        mon["StargatePicture"][i].write(" ")
+       end
+      end
+	 end
+	end
+   end
+  
+   local function drawChevrons(numCEnc,typeMonSG)
+    if typeMonSG == "SG1" or typeMonSG == nil then
+     ColAct = CR
+     ColDeAct = CO
+    elseif typeMonSG == "SGA" then
+     ColAct = CC
+     ColDeAct = CBl
+    elseif typeMonSG == "SGWR" then
+     ColAct = CM
+     ColDeAct = CP  
+    elseif type == "SGNOX" then
+     ColAct = CL
+     ColDeAct = CG
+    end
+    --if statCOn == true then
+    -- statC = ColAct
+    --else
+    -- statC = ColDeAct
+    --end
+    chevronFunc = {x = {23,25,23,7,5,7,18,12,15},y = {5,10,15,15,10,5,17,17,3}}
+    --chevron1
+    --chevronFunc[1] = setP(23,5,statC)
+    --chevron2
+    --chevronFunc[2] = setP(25,10,statC)
+    --chevron3
+    --chevronFunc[3] = setP(23,15,statC)
+    --chevron6
+    --chevronFunc[4] = setP(7,15,statC)
+    --chevron7
+    --chevronFunc[5] = setP(5,10,statC)
+    --chevron8
+    --chevronFunc[6] = setP(7,5,statC)
+    --chevron4
+    --chevronFunc[7] = setP(18,17,statC)
+    --chevron5
+    --chevronFunc[8] = setP(12,17,statC)
+    --chevron9
+    --chevronFunc[9] = setP(15,3,statC)
+    for num = numCEnc,8 do
+     setP(chevronFunc.x[num+1],chevronFunc.y[num+1],ColDeAct)
+    end
+    for num = 1,numCEnc do
+     setP(chevronFunc.x[num],chevronFunc.y[num],ColAct)
+    end
+   end
+  
+   local function drawStargateFrame(typeMonSG)
+    --line1
+    setF(12,2,18,2,CGR)
+    --line2
+    setF(9,3,21,3,CGR)
+    --line3
+    setF(7,4,23,4,CGR)
+    --line4
+    setF(6,5,9,5,CGR)
+    setF(21,5,24,5,CGR)
+    --line5
+    setF(5,6,8,6,CGR)
+    setF(22,6,25,6,CGR)
+    --line6
+    setF(4,7,7,7,CGR)
+    setF(23,7,26,7,CGR)
+    --line7
+    setF(4,8,6,8,CGR)
+    setF(24,8,26,8,CGR)
+    --line8
+    setF(4,9,6,9,CGR)
+    setF(24,9,26,9,CGR)
+    --line9
+    setF(4,10,6,10,CGR)
+    setF(24,10,26,10,CGR)
+    --line10
+    setF(4,11,6,11,CGR)
+    setF(24,11,26,11,CGR)
+    --line11
+    setF(4,12,6,12,CGR)
+    setF(24,12,26,12,CGR)
+    --line12
+    setF(4,13,7,13,CGR)
+    setF(23,13,26,13,CGR)
+    --line13
+    setF(5,14,8,14,CGR)
+    setF(22,14,25,14,CGR)
+    --line14
+    setF(6,15,9,15,CGR)
+    setF(21,15,24,15,CGR)
+    --line15
+    setF(7,16,23,16,CGR)
+    --line16
+    setF(8,17,22,17,CGR)
+    --line16
+    setF(10,18,20,18,CGR)
+    drawChevrons(0,typeMonSG)
+   end
+  
+   local function drawWormhole()
+    setF(10,5,20,5,CBl)
+    setF(9,6,21,6,CBl)
+    setF(8,7,22,7,CBl)
+    setF(7,8,23,12,CBl)
+    setF(8,13,22,13,CBl)
+    setF(9,14,21,14,CBl)
+    setF(10,15,20,15,CBl)
+   end
+   
+   local function drawTable()
+    setF(32,1,32,19,CGR)
+    setF(36,1,36,19,CGR)
+	for i = 0,9 do 
+	 setF(33,1+2*i,35,1+2*i,CGR)
+	end
+   end
+   
+   changeMonSG = nill
+   oldChangeMonSG = "hi"
+   typeGateMonSG = "SG1"
+   while true do
+    if changeMonSG ~= oldChangeMonSG then
+     oldChangeMonSG = changeMonSG
+	 for i = 1,#mon["StargatePicture"] do
+	  if mon["StargatePicture"][i] ~= nil then
+       mon["StargatePicture"][i].setBackgroundColor(CB)
+       mon["StargatePicture"][i].clear()
+	  end
+	 end
+    end
+	--needs to be changed
+	drawTable()
+    if SG.getActivatedChevrons() ~= 0 and SG.getActivatedChevrons() ~= 9 then
+     changeMonSG = "dialing"
+     drawStargateFrame(typeGateMonSG)
+     drawChevrons(SG.getActivatedChevrons(),typeGateMonSG)
+    elseif SG.getActivatedChevrons() == 9 then
+     changeMonSG = "connected"
+     drawStargateFrame(typeGateMonSG)
+     drawChevrons(9,typeGateMonSG)
+     drawWormhole()
+    else
+     changeMonSG = "idel"
+     drawStargateFrame(typeGateMonSG)
+    end
+    sleep(0.2)  
+   end
+   else 
+    sleep(1)
+  end
+ end 
+end
+
+function timeStat()
+ while true do 
+  --timer
+  OSTime = textutils.formatTime(os.time(),true)
+  WTime = OSTime --when you can change time for like a age 
+  if string.len(WTime) < 5 then WTime = "0"..WTime end
+ -- if mon["DispMsg"] ~= nil then
+ --  mon["DispMsg"].setBackgroundColor(CBG)
+ --  mon["DispMsg"].setTextColor(CB)
+ --  mon["DispMsg"].setCursorPos(1,1)
+ --  mon["DispMsg"].write("time: "..WTime)
+ -- end
+  if Menu == "Main" or Menu == "lockdown" or (Menu == "RequestPass" and OldMenu == "Main") then
+   term.setCursorPos(2,2)
+   BT.setBackgroundColor(CBG)
+   BT.setTextColor(CB)
+   BT.write("Time: "..WTime,2,2,CB,CBG)
+   -- term.setCursorPos(26,2)
+   -- BT.write("day: "..os.day())
+   OSDay = os.day()
+   WDay = OSDay --when you can change day for like a age 
+   --term.setCursorPos(50-string.len("day: "..WDay),2)
+   BT.write("Day: "..WDay,16,2,CB,CBG)
+   BT.drawButtons()
+  end
+  sleep(0.4)
+ end
+end
+
+function SGStat()
+ while true do 
+   --sg
+    --if SGData.isDialing then
+	if SG.getActivatedChevrons() ~= 0 and SG.getActivatedChevrons() ~= 9 then
+     c = CO
+     sgstat = "dialing"
+    --elseif SGData.isConnected then
+	elseif SG.getActivatedChevrons() == 9 then
+     c = CG
+     sgstat = "Connected"
+    else
+     c = CR   
+     sgstat = "idle"
+    end
+	if Menu == "Main" or Menu == "lockdown" or (Menu == "RequestPass" and OldMenu == "Main") then
+	 term.setCursorBlink(false)
+     term.setCursorPos(2,3)
+     BT.setBackgroundColor(CBG)
+	 BT.setTextColor(CB)
+     BT.write("Status: ")
+	 term.setCursorPos(2,4)
+	 BT.write("Chevrons encoded: ")
+	 BT.write(SG.getActivatedChevrons(),20,4)
+	 BT.write("Address: ",2,5)
+	 BT.setF(11,5,20,5)
+	 if SGbg.Address ~= nil then 
+	  local Chevrons = SG.splitAdress(SGbg.Address)
+	  BT.write(SGbg.Address,11,5,CLGR,CBG)
+	  --BT.write(SG.getActivatedGlyphs(),11,5,CB,CBG)
+	  --delete
+	  for i = 1,SG.getActivatedChevrons() do
+	   BT.write(Chevrons[i],11+(i-1),5,CB,CBG)
+	  end
+	  --delete
+	 else
+	  --BT.write(SG.getActivatedGlyphs(),11,5,CB,CBG)
+	 end
+	 term.setCursorBlink(false)
+     BT.setTextColor(c)
+     term.setCursorPos(10,3)
+     BT.write(sgstat.."         ")
+     term.setCursorPos(26,2)
+     BT.setTextColor(CB)
+     BT.write("Iris: ".."none")
+	 --BT.write("Iris: "..SG.getIrisState(),26,2)
+	 --if SG.getIrisState() ~= nil then
+	  --BT.write("Health: "..SG.getIrisHealth(),26,3)
+	 --end
+	end
+  sleep(0.2)
+ end
+end
+
+
+function checkID(ID)
+ return(true)
+end
+
+function RemoteControl()
+ while true do
+  ID,Data = rednet.receive()
+  if Settings.RemoteControl and type(Data) == "table" then
+   if Data["command"] == "Verify" then
+    rednet.send(ID,checkID(ID))
+   elseif Data["command"] == "disconnect" then
+    if checkID(ID) then
+	 SG.disconnect()
+	 SG.deactivateAllChevrons()
+	end
+   elseif Data["command"] == "deactivateLastChevron" then
+    if checkID(ID) then
+	 SG.deactivateLastChevrons()
+	end
+   elseif Data["command"] == "dial" then
+    if checkID(ID) then
+	 SG.dial(Data["Data1"],Data["Data2"])
+	end
+   --more soon
+   end
+  end
+  if type(Data) == "table" then
+   if Data["command"] == "msg" then
+   
+   end
+  end  
+ end
+end
+
+function sgStat1()
+-- parallel.waitForAll(chevronLock,sgIncoming,sgStayOpen)
+ while true do 
+  sleep(1)
+ end
+end
+--StargateMon
+
+function stargateStats()
+ parallel.waitForAll(SGStat,clearMSG,timeStat,SG.gateProcces,RemoteControl,StargateMon)
+ while true do 
+  sleep(1)
+ end
+end
+
+function ENDPROGRAMLOOP()
+ ENDPROGRAM = false
+ while ENDPROGRAM ~= true do 
+  sleep(0.4)
+ end
+ BT.clearAndDraw()
+ BT = nil
+ os.unloadAPI(dirProg.."Button")
+ term.setCursorPos(1,1)
+end
+
+--,sgStat1,clearMSG
+--RecEvents,getStargateData
+
+MainM()
+parallel.waitForAny(click,bgProces,stargateStats,ENDPROGRAMLOOP)
+--sgStat1
+
+

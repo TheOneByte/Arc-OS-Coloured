@@ -1,0 +1,661 @@
+--Documentation: 
+--This program is a framework which has a bunch of useful functions that other commands need, like selection. 
+
+--For the WorldEdit equivalent of each function, the link is right before the function itself. 
+
+--Common variable name syntax: 
+--Num[Command]=Number argument for [Command]. Ex: NumLoadClipboard is which clipboard to load. 
+--Giving certain commands a boolean argument will specify if they should output. (set(true) will output nothing!) 
+--x1, y1, z1, and x2, y2, and z2 are the coordinates of cuboid selections. 
+--px, py, and pz are the player's coordinates. 
+--Blocks and Meta contain the block IDs to be replaced, and Blocks2 and Meta2 are what they are changed to. (So, Blocks2 and Meta2 would be used in set) 
+--heightmap() returns a heightmap of the selection, used for commands like overlay or naturalize. 
+
+--message is in lowercase, OriginalMessage is completely unchanged. 
+
+--The global names for interfacing with the adventure map interface are consistent with Immibis's documentation. 
+
+--Default program paths (can be changed):
+APIPath="programs/GeneralAPI"
+CuboidPath="programs/WE_Cuboid"
+SelPath="programs/WE_Sel"
+ClipboardPath="programs/WE_Clipboard"
+debugPath="programs/debug"
+
+
+hasChatBox=false
+local function getChat()
+  local username,message
+  while true do
+    local args={os.pullEvent()} --Get chat messages
+    if args[1]:sub(1,4)=="chat" then
+      username=#args~=3 and args[3] or args[2]
+      message=#args~=3 and args[4] or args[3]
+      break
+    end
+  end
+  return username,message
+end
+
+p=peripheral.find("adventure map interface")
+if not p then
+  print("Connect an adventure map interface or a chat box and say something to continue.")
+  username,message=getChat()
+end
+
+hasChatBox=type(commands)=="table" and p==nil
+print("Just say your desired command or help for a list of commands.")
+
+blockBlacklist={473} 
+Selection={}
+Direction=""
+shell.run(APIPath)
+shell.run(CuboidPath)
+shell.run(SelPath)
+if fs.exists(ClipboardPath) then
+  hasNBT=true
+  shell.run(ClipboardPath)
+end
+local args={...}
+for i=1,#args do
+  if args[i]=="-d" or args[i]=="-debug" and fs.exists(debugPath) then
+    debug=dofile(debugPath)
+    break
+  end
+end
+
+w=p and p.getWorld(p.getPeripheralWorldID())
+local BlockNames={{"stone","rock"},{"grass"},{"dirt"},{"cobblestone","cobble"},{"wood","woodplank","plank","woodplanks","planks"},{"sapling","seedling"},{"adminium","bedrock"},{"water_(stationary)","water","waterstationary","stationarywater","stillwater"},{"watermoving","movingwater","flowingwater","waterflowing"},{"lavamoving","movinglava","flowinglava","lavaflowing"},{"lava_(stationary)","lava","lavastationary","stationarylava","stilllava"},{"sand"},{"gravel"},{"gold_ore","goldore"},{"iron_ore","ironore"},{"coal_ore","coalore"},{"log","tree","pine","oak","birch","jungle"},{"leaves","leaf"},{"sponge"},{"glass"},{"lapis_lazuli_ore","lapislazuliore","blueore","lapisore"},{"lapis_lazuli","lapislazuli","lapislazuliblock","bluerock","lapisblock"},{"dispenser"},{"sandstone"},{"note_block","musicblock","noteblock","note","music","instrument"},{"bed"},{"poweredrail","boosterrail","poweredtrack","boostertrack","booster"},{"detector_rail","detectorrail","detector"},{"sticky_piston","stickypiston"},{"web","spiderweb"},{"long_grass","longgrass","tallgrass"},{"deadbush","shrub","deadshrub","tumbleweed"},{"piston"},{"piston_extension","pistonextendsion","pistonhead"},{"cloth","wool"},{"piston_moving_piece","movingpiston"},{"yellow_flower","yellowflower","flower"},{"red_rose","redflower","redrose","rose"},{"brown_mushroom","brownmushroom","mushroom"},{"red_mushroom","redmushroom"},{"gold_block","gold","goldblock"},{"iron_block","iron","ironblock"},{"double_step","doubleslab","doublestoneslab","doublestep"},{"slab","stoneslab","step","halfstep"},{"brick","brickblock"},{"tnt","c4","explosive"},{"bookshelf","bookshelves","bookcase","bookcases"},{"cobblestone_(mossy)","mossycobblestone","mossstone"},{"obsidian"},{"torch","light","candle"},{"fire","flame","flames"},{"mob_spawner","mobspawner","spawner"},{"wooden_stairs","woodstair","woodstairs","woodenstair","woodenstairs"},{"chest","storage","storagechest"},{"redstone_wire","redstone","redstoneblock"},{"diamond_ore","diamondore"},{"diamond_block","diamond","diamondblock"},{"workbench","table","craftingtable","crafting"},{"crops","crop","plant","plants"},{"soil","farmland"},{"furnace"},{"furnace_(burning)","burningfurnace","litfurnace"},{"sign_post","sign","signpost"},{"wooden_door","wooddoor","woodendoor","door"},{"ladder"},{"minecart_tracks","track","tracks","minecrattrack","minecarttracks","rails","rail"},{"cobblestone_stairs","cobblestonestair","cobblestonestairs","cobblestair","cobblestairs"},{"wall_sign","wallsign"},{"lever","switch","stonelever","stoneswitch"},{"stone_pressure_plate","stonepressureplate","stoneplate"},{"iron_door","irondoor"},{"wooden_pressure_plate","woodpressureplate","woodplate","woodenpressureplate","woodenplate","plate","pressureplate"},{"redstone_ore","redstoneore"},{"glowing_redstone_ore","glowingredstoneore"},{"redstone_torch_(off)","redstonetorchoff","rstorchoff"},{"redstone_torch_(on)","redstonetorch","redstonetorchon","rstorchon","redtorch"},{"stone_button","stonebutton","button"},{"snow","snow_layer"},{"ice"},{"snow_block","snowblock"},{"cactus","cacti"},{"clay"},{"reed","cane","sugarcane","sugarcanes"},{"jukebox","stereo","recordplayer"},{"fence","fence"},{"pumpkin"},{"redmossycobblestone","redcobblestone","redmosstone","redcobble","netherstone","netherrack","nether","hellstone"},{"soul_sand","slowmud","mud","soulsand","hellmud"},{"brittlegold","glowstone","lightstone","brimstone","australium"},{"portal","portal"},{"pumpkin_(on)","pumpkinlighted","pumpkinon","litpumpkin","jackolantern"},{"cake","cakeblock"},{"redstone_repeater_(off)","diodeoff","redstonerepeater","repeateroff","delayeroff"},{"redstone_repeater_(on)","diodeon","redstonerepeateron","repeateron","delayeron"},{"stained_glass","stainedglass"},{"trap_door","trapdoor","hatch","floordoor"},{"silverfish_block","silverfish","silver"},{"stone_brick","stonebrick","sbrick","smoothstonebrick"},{"red_mushroom_cap","giantmushroomred","redgiantmushroom","redmushroomcap"},{"brown_mushroom_cap","giantmushroombrown","browngiantmushoom","brownmushroomcap"},{"iron_bars","ironbars","ironfence"},{"glass_pane","window","glasspane","glasswindow"},{"melon_(block)","melonblock"},{"pumpkin_stem","pumpkinstem"},{"melon_stem","melonstem"},{"vine","vines","creepers"},{"fence_gate","fencegate","gate"},{"brick_stairs","brickstairs","bricksteps"},{"stone_brick_stairs","stonebrickstairs","smoothstonebrickstairs"},{"mycelium","fungus","mycel"},{"lily_pad","lilypad","waterlily"},{"nether_brick","netherbrick"},{"nether_brick_fence","netherbrickfence","netherfence"},{"nether_brick_stairs","netherbrickstairs","netherbricksteps","netherstairs","nethersteps"},{"nether_wart","netherwart","netherstalk"},{"enchantment_table","enchantmenttable","enchanttable"},{"brewing_stand","brewingstand"},{"cauldron"},{"end_portal","endportal","blackstuff","airportal","weirdblackstuff"},{"end_portal_frame","endportalframe","airportalframe","crystalblock"},{"end_stone","endstone","enderstone","endersand"},{"dragon_egg","dragonegg","dragons"},{"redstone_lamp_(off)","redstonelamp","redstonelampoff","rslamp","rslampoff","rsglow","rsglowoff"},{"redstone_lamp_(on)","redstonelampon","rslampon","rsglowon"},{"double_wood_step","doublewoodslab","doublewoodstep"},{"wood_step","woodenslab","woodslab","woodstep","woodhalfstep"},{"cocoa_plant","cocoplant","cocoaplant"},{"sandstone_stairs","sandstairs","sandstonestairs"},{"emerald_ore","emeraldore"},{"ender_chest","enderchest"},{"tripwire_hook","tripwirehook"},{"tripwire","string"},{"emerald_block","emeraldblock","emerald"},{"spruce_wood_stairs","sprucestairs","sprucewoodstairs"},{"birch_wood_stairs","birchstairs","birchwoodstairs"},{"jungle_wood_stairs","junglestairs","junglewoodstairs"},{"command_block","commandblock","cmdblock","command","cmd"},{"beacon","beaconblock"},{"cobblestone_wall","cobblestonewall","cobblewall"},{"flower_pot","flowerpot","plantpot","pot"},{"carrots","carrotsplant","carrotsblock"},{"potatoes","potatoesblock"},{"wooden_button","woodbutton","woodenbutton"},{"head","skull"},{"anvil","blacksmith"},{"trapped_chest","trappedchest","redstonechest"},{"weighted_pressure_plate_(light)","lightpressureplate"},{"weighted_pressure_plate_(heavy)","heavypressureplate"},{"redstone_comparator_(inactive)","redstonecomparator","comparator"},{"redstone_comparator_(active)","redstonecomparatoron","comparatoron"},{"daylight_sensor","daylightsensor","lightsensor","daylightdetector"},{"block_of_redstone","redstoneblock","blockofredstone"},{"nether_quartz_ore","quartzore","netherquartzore"},{"hopper"},{"block_of_quartz","quartzblock","quartz"},{"quartz_stairs","quartzstairs"},{"activator_rail","activatorrail","tntrail","activatortrack"},{"dropper"},{"stained_clay","stainedclay","stainedhardenedclay"},{"stained_glass_pane","stainedglasspane"},{"leaves2","acacialeaves","darkoakleaves"},{"log2","acacia","darkoak"},{"acacia_wood_stairs","acaciawoodstairs","acaciastairs"},{"dark_oak_wood_stairs","darkoakwoodstairs","darkoakstairs"},[170]={"hay_block","hayblock","haybale","wheatbale"},[171]={"carpet","carpet"},[172]={"hardened_clay","hardenedclay","hardclay"},[173]={"block_of_coal","coalblock","blockofcoal"},[174]={"packed_ice","packedice","hardice"},[175]={"large_flowers","largeflowers","doubleflowers"},[176]={"large_flowers","largeflowers","doubleflowers"},[0]={"air"}}
+local MCNames={[0]="minecraft:air","minecraft:stone","minecraft:grass","minecraft:dirt","minecraft:cobblestone","minecraft:planks","minecraft:sapling","minecraft:bedrock","minecraft:flowing_water","minecraft:water","minecraft:flowing_lava","minecraft:lava","minecraft:sand","minecraft:gravel","minecraft:gold_ore","minecraft:iron_ore","minecraft:coal_ore","minecraft:log","minecraft:leaves","minecraft:sponge","minecraft:glass","minecraft:lapis_ore","minecraft:lapis_block","minecraft:dispenser","minecraft:sandstone","minecraft:noteblock","minecraft:bed","minecraft:golden_rail","minecraft:detector_rail","minecraft:sticky_piston","minecraft:web","minecraft:tallgrass","minecraft:deadbush","minecraft:piston","minecraft:piston_head","minecraft:wool",[37]="minecraft:yellow_flower",[38]="minecraft:red_flower",[39]="minecraft:brown_mushroom",[40]="minecraft:red_mushroom",[41]="minecraft:gold_block",[42]="minecraft:iron_block",[43]="minecraft:double_stone_slab",[44]="minecraft:stone_slab",[45]="minecraft:brick_block",[46]="minecraft:tnt",[47]="minecraft:bookshelf",[48]="minecraft:mossy_cobblestone",[49]="minecraft:obsidian",[50]="minecraft:torch",[51]="minecraft:fire",[52]="minecraft:mob_spawner",[53]="minecraft:oak_stairs",[54]="minecraft:chest",[55]="minecraft:redstone_wire",[56]="minecraft:diamond_ore",[57]="minecraft:diamond_block",[58]="minecraft:crafting_table",[59]="minecraft:wheat",[60]="minecraft:farmland",[61]="minecraft:furnace",[62]="minecraft:lit_furnace",[63]="minecraft:standing_sign",[64]="minecraft:wooden_door",[65]="minecraft:ladder",[66]="minecraft:rail",[67]="minecraft:stone_stairs",[68]="minecraft:wall_sign",[69]="minecraft:lever",[70]="minecraft:stone_pressure_plate",[71]="minecraft:iron_door",[72]="minecraft:wooden_pressure_plate",[73]="minecraft:redstone_ore",[74]="minecraft:lit_redstone_ore",[75]="minecraft:unlit_redstone_torch",[76]="minecraft:redstone_torch",[77]="minecraft:stone_button",[78]="minecraft:snow_layer",[79]="minecraft:ice",[80]="minecraft:snow",[81]="minecraft:cactus",[82]="minecraft:clay",[83]="minecraft:reeds",[84]="minecraft:jukebox",[85]="minecraft:fence",[86]="minecraft:pumpkin",[87]="minecraft:netherrack",[88]="minecraft:soul_sand",[89]="minecraft:glowstone",[90]="minecraft:portal",[91]="minecraft:lit_pumpkin",[92]="minecraft:cake",[93]="minecraft:unpowered_repeater",[94]="minecraft:powered_repeater",[95]="minecraft:stained_glass",[96]="minecraft:trapdoor",[97]="minecraft:monster_egg",[98]="minecraft:stonebrick",[99]="minecraft:stonebrick",[100]="minecraft:stonebrick",[101]="minecraft:iron_bars",[102]="minecraft:glass_pane",[103]="minecraft:melon_block",[104]="minecraft:pumpkin_stem",[105]="minecraft:melon_stem",[106]="minecraft:vine",[107]="minecraft:fence_gate",[108]="minecraft:brick_stairs",[109]="minecraft:stone_brick_stairs",[110]="minecraft:mycelium",[111]="minecraft:waterlily",[112]="minecraft:nether_brick",[113]="minecraft:nether_brick_fence",[114]="minecraft:nether_brick_stairs",[115]="minecraft:nether_wart",[116]="minecraft:enchanting_table",[117]="minecraft:brewing_stand",[118]="minecraft:cauldron",[119]="minecraft:end_portal",[120]="minecraft:end_portal_frame",[121]="minecraft:end_stone",[122]="minecraft:dragon_egg",[123]="minecraft:redstone_lamp",[124]="minecraft:lit_redstone_lamp",[125]="minecraft:double_wooden_slab",[126]="minecraft:wooden_slab",[127]="minecraft:cocoa",[128]="minecraft:sandstone_stairs",[129]="minecraft:emerald_ore",[130]="minecraft:ender_chest",[131]="minecraft:tripwire_hook",[132]="minecraft:tripwire_hook",[133]="minecraft:emerald_block",[134]="minecraft:spruce_stairs",[135]="minecraft:birch_stairs",[136]="minecraft:jungle_stairs",[137]="minecraft:command_block",[138]="minecraft:beacon",[139]="minecraft:cobblestone_wall",[140]="minecraft:flower_pot",[141]="minecraft:carrots",[142]="minecraft:potatoes",[143]="minecraft:wooden_button",[144]="minecraft:skull",[145]="minecraft:anvil",[146]="minecraft:trapped_chest",[147]="minecraft:light_weighted_pressure_plate",[148]="minecraft:heavy_weighted_pressure_plate",[149]="minecraft:unpowered_comparator",[150]="minecraft:powered_comparator",[151]="minecraft:daylight_detector",[152]="minecraft:redstone_block",[153]="minecraft:quartz_ore",[154]="minecraft:hopper",[155]="minecraft:quartz_block",[156]="minecraft:quartz_stairs",[157]="minecraft:activator_rail",[158]="minecraft:dropper",[159]="minecraft:stained_hardened_clay",[160]="minecraft:stained_glass_pane",[161]="minecraft:leaves2",[162]="minecraft:logs2",[163]="minecraft:acacia_stairs",[164]="minecraft:dark_oak_stairs",[170]="minecraft:hay_block",[171]="minecraft:carpet",[172]="minecraft:hardened_clay",[173]="minecraft:coal_block",[174]="minecraft:packed_ice",[175]="minecraft:double_plant"}
+local IDs={["minecraft:bed"]=26,["minecraft:unlit_redstone_torch"]=75,["minecraft:mob_spawner"]=52,["minecraft:stone_brick_stairs"]=109,["minecraft:end_portal"]=119,["minecraft:web"]=30,["minecraft:oak_stairs"]=53,["minecraft:nether_brick"]=112,["minecraft:noteblock"]=25,["minecraft:dropper"]=158,["minecraft:ladder"]=65,["minecraft:detector_rail"]=28,["minecraft:lapis_block"]=22,["minecraft:emerald_ore"]=129,["minecraft:water"]=9,["minecraft:stained_hardened_clay"]=159,["minecraft:beacon"]=138,["minecraft:soul_sand"]=88,["minecraft:wooden_door"]=64,["minecraft:pumpkin"]=86,["minecraft:wheat"]=59,["minecraft:iron_bars"]=101,["minecraft:redstone_ore"]=73,["minecraft:jukebox"]=84,["minecraft:dragon_egg"]=122,["minecraft:spruce_stairs"]=134,["minecraft:hopper"]=154,["minecraft:stone_slab"]=44,["minecraft:skull"]=144,["minecraft:carpet"]=171,["minecraft:mycelium"]=110,["minecraft:sand"]=12,["minecraft:coal_ore"]=16,["minecraft:stained_glass"]=95,["minecraft:snow"]=80,["minecraft:fire"]=51,["minecraft:enchanting_table"]=116,["minecraft:lava"]=11,["minecraft:potatoes"]=142,["minecraft:unpowered_repeater"]=93,["minecraft:stone_stairs"]=67,["minecraft:cauldron"]=118,["minecraft:stone_pressure_plate"]=70,["minecraft:deadbush"]=32,["minecraft:torch"]=50,["minecraft:hay_block"]=170,["minecraft:sandstone_stairs"]=128,["minecraft:netherrack"]=87,["minecraft:sandstone"]=24,["minecraft:gold_ore"]=14,["minecraft:bookshelf"]=47,["minecraft:cake"]=92,["minecraft:logs2"]=162,["minecraft:melon_stem"]=105,["minecraft:piston_head"]=34,["minecraft:brick_block"]=45,["minecraft:acacia_stairs"]=163,["minecraft:brown_mushroom"]=39,["minecraft:lit_furnace"]=62,["minecraft:glass"]=20,["minecraft:stone_button"]=77,["minecraft:air"]=0,["minecraft:packed_ice"]=174,["minecraft:sapling"]=6,["minecraft:pumpkin_stem"]=104,["minecraft:leaves"]=18,["minecraft:fence"]=85,["minecraft:obsidian"]=49,["minecraft:snow_layer"]=78,["minecraft:wool"]=35,["minecraft:powered_comparator"]=150,["minecraft:jungle_stairs"]=136,["minecraft:iron_block"]=42,["minecraft:chest"]=54,["minecraft:diamond_ore"]=56,["minecraft:glowstone"]=89,["minecraft:dispenser"]=23,["minecraft:nether_brick_fence"]=113,["minecraft:sticky_piston"]=29,["minecraft:end_portal_frame"]=120,["minecraft:nether_brick_stairs"]=114,["minecraft:tnt"]=46,["minecraft:redstone_wire"]=55,["minecraft:command_block"]=137,["minecraft:golden_rail"]=27,["minecraft:flowing_water"]=8,["minecraft:coal_block"]=173,["minecraft:double_wooden_slab"]=125,["minecraft:dark_oak_stairs"]=164,["minecraft:double_plant"]=175,["minecraft:mossy_cobblestone"]=48,["minecraft:gravel"]=13,["minecraft:reeds"]=83,["minecraft:trapdoor"]=96,["minecraft:planks"]=5,["minecraft:stained_glass_pane"]=160,["minecraft:activator_rail"]=157,["minecraft:quartz_stairs"]=156,["minecraft:nether_wart"]=115,["minecraft:flowing_lava"]=10,["minecraft:waterlily"]=111,["minecraft:quartz_block"]=155,["minecraft:light_weighted_pressure_plate"]=147,["minecraft:brick_stairs"]=108,["minecraft:wooden_button"]=143,["minecraft:quartz_ore"]=153,["minecraft:standing_sign"]=63,["minecraft:unpowered_comparator"]=149,["minecraft:daylight_detector"]=151,["minecraft:redstone_block"]=152,["minecraft:heavy_weighted_pressure_plate"]=148,["minecraft:vine"]=106,["minecraft:lit_redstone_lamp"]=124,["minecraft:anvil"]=145,["minecraft:carrots"]=141,["minecraft:flower_pot"]=140,["minecraft:cobblestone_wall"]=139,["minecraft:birch_stairs"]=135,["minecraft:emerald_block"]=133,["minecraft:tripwire_hook"]=132,["minecraft:farmland"]=60,["minecraft:furnace"]=61,["minecraft:cocoa"]=127,["minecraft:stone"]=1,["minecraft:wooden_slab"]=126,["minecraft:trapped_chest"]=146,["minecraft:redstone_lamp"]=123,["minecraft:double_stone_slab"]=43,["minecraft:tallgrass"]=31,["minecraft:monster_egg"]=97,["minecraft:sponge"]=19,["minecraft:end_stone"]=121,["minecraft:iron_ore"]=15,["minecraft:gold_block"]=41,["minecraft:red_flower"]=38,["minecraft:piston"]=33,["minecraft:powered_repeater"]=94,["minecraft:brewing_stand"]=117,["minecraft:wall_sign"]=68,["minecraft:clay"]=82,["minecraft:wooden_pressure_plate"]=72,["minecraft:lapis_ore"]=21,["minecraft:ender_chest"]=130,["minecraft:crafting_table"]=58,["minecraft:lever"]=69,["minecraft:grass"]=2,["minecraft:cactus"]=81,["minecraft:dirt"]=3,["minecraft:ice"]=79,["minecraft:bedrock"]=7,["minecraft:hardened_clay"]=172,["minecraft:stonebrick"]=100,["minecraft:yellow_flower"]=37,["minecraft:fence_gate"]=107,["minecraft:melon_block"]=103,["minecraft:red_mushroom"]=40,["minecraft:lit_redstone_ore"]=74,["minecraft:redstone_torch"]=76,["minecraft:iron_door"]=71,["minecraft:leaves2"]=161,["minecraft:diamond_block"]=57,["minecraft:lit_pumpkin"]=91,["minecraft:cobblestone"]=4,["minecraft:portal"]=90,["minecraft:rail"]=66,["minecraft:glass_pane"]=102,["minecraft:log"]=17}
+
+--Converts a block ID to minecraft's unlocalized name. removeMinecraft will remove the "minecraft:" at the beginning.
+function idToMCName(id,removeMinecraft)
+  if tonumber(id) and tonumber(id)<=175 then
+    return (removeMinecraft and MCNames[id]:sub(11)) or MCNames[id]
+  end
+end
+
+function MCNameToID(name,addMinecraft)
+  if type(name)=="string" then
+    return IDs[((addMinecraft and "minecraft:"..name) or name)]
+  end
+end
+
+function sendChat(msg)
+  msg=tostring(msg) or type(msg)
+  if msg=="" then
+    return false
+  end
+  if hasChatBox then
+    local splitMsg=msg:find("\n") and stringx.split(msg,"\n") or {msg}
+    for k,v in pairs(splitMsg) do
+      commands.execAsync("say "..v)
+    end
+  else
+    pl.sendChat(msg)
+  end
+end
+
+function getBlockID(x,y,z)
+  if not tonumber(x) or not tonumber(y) or not tonumber(z) then
+    print(debug.traceback())
+  end
+  return (not hasChatBox and w.getBlockID(x,y,z)) or MCNameToID(commands.getBlockInfo(x,y,z).name) or commands.getBlockInfo(x,y,z).name
+end
+
+function getMetadata(x,y,z)
+  if not tonumber(x) or not tonumber(y) or not tonumber(z) then
+    sendChat(debug.traceback())
+  end
+  return ((not hasChatBox and w.getMetadata(x,y,z)) or commands.getBlockInfo(x,y,z).metadata)
+end
+
+function setBlock(x,y,z,ID,Meta)
+  if not hasChatBox then
+    return w.setBlockWithoutNotify(x,y,z,tonumber(ID) or MCNameToID(ID),tonumber(Meta)) --Set the block to the appropriate block type.
+  else
+    return commands.execAsync("setblock "..x.." "..y.." "..z.." "..((tonumber(ID) and (idToMCName(tonumber(ID),false))) or ID).." "..Meta.." replace")
+  end
+end
+
+function debugPrintBlock(x,y,z) --Prints the block at the given coords in a human-readable format to make sure getBlockID and getMetadata work.
+  sendChat("Block @ ("..x..", "..y..", "..z.."): "..(idToMCName(getBlockID(x,y,z),true) or getBlockID(x,y,z))..":"..getMetadata(x,y,z))
+end
+
+function makeCuboidSelection()
+  Selection={}
+  for x=math.min(x1,x2),math.max(x1,x2) do
+    for y=math.min(y1,y2),math.max(y1,y2) do
+      for z=math.min(z1,z2),math.max(z1,z2) do
+        table.insert(Selection,{["x"]=x,["y"]=y,["z"]=z})
+      end
+    end
+  end
+  Selection.type="cuboid"
+end
+
+function getFlatSelection(selection)
+  local sel={}
+  sel[1]=selection[1]
+  for i=1,#selection do
+    for j=1,#sel do
+      if selection[i].x==sel[j].x and selection[i].z==sel[j].z then
+        break
+      elseif j==#sel then
+        sel[#sel+1]={x=selection[i].x,z=selection[i].z}
+      end
+    end
+  end
+  return sel
+end
+
+--Seperates command into usable data for set and replace--
+local function SeparateString()
+  local function splitTbls(text,needsPercent)
+    local BlocksTbl={}
+    local MetaTbl={}
+    local PercentagesTbl={}
+    tmpBlocks=stringx.split(text,",")
+    for i=1,#tmpBlocks do
+      findColon=tmpBlocks[i]:find(":")
+      if findColon then
+        table.insert(BlocksTbl,tonumber(tmpBlocks[i]:sub(1,findColon-1)) or tmpBlocks[i]:sub(1,findColon-1))
+        table.insert(MetaTbl,tmpBlocks[i]:sub(findColon+1))
+      else
+        table.insert(BlocksTbl,tonumber(tmpBlocks[i]) or tmpBlocks[i])
+        table.insert(MetaTbl,0)
+      end
+    end
+    if needsPercent then
+      for i=1,#BlocksTbl do
+        local tmpBlocks2=stringx.split(tostring(BlocksTbl[i]),"%")
+        if #tmpBlocks2==2 then
+          BlocksTbl[i]=tonumber(tmpBlocks2[2]) or tmpBlocks2[2]
+          PercentagesTbl[i]=tmpBlocks2[1]
+        else
+          BlocksTbl[i]=tonumber(tmpBlocks2[1]) or tmpBlocks2[1]
+          PercentagesTbl[i]=PercentagesTbl[i] or false --This could be any non-number.
+        end
+      end
+      for i=1,#MetaTbl do
+        local tmpMeta2=stringx.split(tostring(MetaTbl[i]),"%")
+        if #tmpMeta2==2 then
+          MetaTbl[i]=tmpMeta2[2]
+          PercentagesTbl[i]=tmpMeta2[1]
+        else
+          MetaTbl[i]=tmpMeta2[1]
+          PercentagesTbl[i]=PercentagesTbl[i] or false --This could be any non-number.
+        end
+      end
+    end
+    if needsPercent then
+      return BlocksTbl,MetaTbl,PercentagesTbl
+    else
+      return BlocksTbl,MetaTbl
+    end
+  end
+  local tmp=stringx.split(message:sub(message:find(" ")+1)," ")
+  if message:sub(1,message:find(" ")-1)=="replace" then
+    Blocks,Meta=splitTbls(tmp[1],false)
+    Blocks2,Meta2,Percentages=splitTbls(tmp[2],true)
+  else
+    Blocks2,Meta2,Percentages=splitTbls(tmp[1],true)
+  end
+  TotalPercent=0 --Convert ones without percentages to ones WITH percentages!
+  Spaces=0
+  for i=1,#Percentages do
+    if not tonumber(Percentages[i]) then
+      Spaces=Spaces+1
+    end
+  end
+  if Spaces==#Percentages then
+    for i=1,#Percentages do
+      Percentages[i]=100
+    end
+  end
+  for i=1,#Percentages do
+    if tonumber(Percentages[i]) then
+      TotalPercent=TotalPercent+Percentages[i]
+    end
+  end
+  for i=1,#Percentages do
+    if not tonumber(Percentages[i]) then
+      Percentages[i]=TotalPercent/(#Percentages-Spaces)
+    end
+  end
+end
+
+--change block names into block IDs--
+function ConvertName(tbl,tbl2)
+  if tbl and tbl2 then
+    for i=1,#tbl do
+      if tonumber(tbl[i])==nil then
+        for k,v in pairs(BlockNames) do 
+          if table.indexOf(v,tostring(tbl[i])) then
+            if k==17 then
+              if tbl[i]=="pine" then
+                tbl2[i]=1
+              elseif tbl[i]=="birch" then
+                tbl2[i]=2
+              elseif tbl[i]=="jungle" then
+                tbl2[i]=3
+              end
+              break
+            elseif k==162 then
+              if tbl[i]=="darkoak" then
+                tbl2[i]=1
+              end
+              break
+            elseif next(BlockNames,k)==nil then
+              sendChat('Invalid Block: "'..tbl[i]..'"')
+              return false            
+            else
+              tbl[i]=tonumber(k)
+              break
+            end
+          end
+        end
+      end
+    end
+  end
+  if not tbl and not tbl2 and Blocks2 and Meta2 then --Yay, Laziness
+    if Blocks and Meta and #Blocks>0 and #Meta>0 then
+      ConvertName(Blocks,Meta)
+    end
+    ConvertName(Blocks2,Meta2)
+  end
+end
+
+--Returns a heightmap for the selected area.
+function heightmap()
+  local map={}
+  local i=0
+  local cnt=1
+  local BlocksChecked=0
+  local timeDelay=2.5
+  local x,z
+  local Selection=getFlatSelection(Selection)
+  if #Selection>0 then
+    for i=1,#Selection do
+      if not map[cnt] then
+        map[cnt]={} --Make sure there is a subtable in there
+      end
+      map[cnt].x=Selection[i].x --Store X coordinate
+      map[cnt].z=Selection[i].z --Store Z coordinate
+      x,z=Selection[i].x,Selection[i].z
+      for yVal=math.max(y1,y2),math.min(y1,y2),-1 do
+        if getBlockID(x,yVal,z)~=0 then
+          map[cnt].y=yVal --Store Y coordinate
+          y=yVal
+          break
+        end
+        BlocksChecked=BlocksChecked+1
+        if BlocksChecked%(timeDelay*20)==1 then
+          sendChat(math.round(i/#Selection*100).."% Complete.")
+        end
+      end --Note, it WILL return nil if there isn't a highest block.
+      cnt=cnt+1
+    end
+  else
+    sendChat("Make a selection first!")
+    return false
+  end
+  return map
+end
+
+--finds direction for commands with directions--
+function getDirection(shouldReturn)
+  if not ent then 
+    sendChat("Cannot get the direction the player is looking in. Try specifying the direction in the command.")
+    return false
+  end
+  local xDir,yDir,zDir=ent.getLooking()
+  local function between(num,limit1,limit2)
+    return num>math.min(limit1,limit2) and num<math.max(limit1,limit2)
+  end
+  if between(xDir,.5,1) then
+    Direction="East"
+  elseif between(xDir,-.5,-1) then
+    Direction="West"
+  elseif between(xDir,-.5,.5) and between(zDir,.5,1) then
+    Direction="South"
+  elseif between(xDir,-.5,.5) and between(zDir,-1,-.5) then
+    Direction="North"
+  elseif yDir > 0.85 then
+    Direction="Up"
+  elseif yDir < -0.15 then
+    Direction="Down"
+  else
+    sendChat("I believe you are looking inside out.")
+    return false
+  end
+  Direction=Direction:lower()
+--If shouldReturn is false, it's just modifying the Direction in the global table.
+  if shouldReturn then
+    return Direction
+  end
+end
+
+function getPlayerPos(name)
+  if not w then
+    local state,result=commands.exec("/tp "..name.." ~ ~ ~")
+    if state then
+      local coords=result[1]:sub(16+#name)
+      local returnVal=stringx.split(coords,",")
+      for i=1,#returnVal do
+        returnVal[i]=math.floor(tonumber(returnVal[i]))
+      end
+      return unpack(returnVal)
+    end
+  else
+    return ent.getPosition()
+  end
+end
+
+local function pos1()
+  x1,y1,z1=unpack((ent and {ent.getPosition()}) or {getPlayerPos(username)})
+  y1=y1-1 --Select the block UNDERNEATH them, not the block they're in.
+  x1,y1,z1=math.floor(x1,y1,z1)
+  if x1 and x2 and y1 and y2 and z1 and z2 then
+    makeCuboidSelection()
+  end
+  sendChat("First position set to ("..x1..", "..y1..", "..z1..")"..((#Selection>0 and (" ("..#Selection..")")) or ""))
+end
+
+local function pos2()
+  x2,y2,z2=unpack((ent and {ent.getPosition()}) or {getPlayerPos(username)})
+  y2=y2-1 --Select the block UNDERNEATH them, not the block they're in!
+  x2,y2,z2=math.floor(x2,y2,z2)
+  if x1 and x2 and y1 and y2 and z1 and z2 then
+    makeCuboidSelection()
+  end
+  sendChat("Second position set to ("..x2..", "..y2..", "..z2..")"..((#Selection>0 and (" ("..#Selection..")")) or ""))
+end
+
+local function hpos1()
+  if hasChatBox then
+    sendChat("Command computers cannot see where a player is looking!")
+    return
+  end
+  local x,y,z=ent.getLooking()
+  local mult=0
+  while mult<1000 do
+    x1=math.floor(x*mult+px) --Extend the line from ent.getLooking() out linearly
+    y1=math.floor(y*mult+py+1.62) --The player's eyes are 1.62 blocks from the ground
+    z1=math.floor(z*mult+pz)
+    if getBlockID(x1,y1,z1)~=0 and not table.indexOf(blockBlacklist,getBlockID(x1,y1,z1)) then --Check if it hit a block
+      break
+    else
+      mult=mult+0.05 --Otherwise check another point along the line.
+    end
+  end
+  if x1 and x2 and y1 and y2 and z1 and z2 then
+    makeCuboidSelection()
+  end
+  sendChat("First position set to ("..x1..", "..y1..", "..z1..")"..((#Selection>0 and (" ("..#Selection..")")) or ""))
+end
+
+local function hpos2()
+  if hasChatBox then
+    sendChat("Command computers cannot see where a player is looking!")
+    return
+  end
+  local x,y,z=ent.getLooking()
+  local mult=0
+  while mult<1000 do
+    x2=math.floor(x*mult+px)
+    y2=math.floor(y*mult+py+1.62)
+    z2=math.floor(z*mult+pz)
+    if getBlockID(x2,y2,z2)~=0 and not table.indexOf(blockBlacklist,getBlockID(x2,y2,z2)) then
+      break
+    else
+      mult=mult+0.05
+    end
+  end
+  if x1 and x2 and y1 and y2 and z1 and z2 then
+    makeCuboidSelection()
+  end
+  sendChat("Second position set to ("..x2..", "..y2..", "..z2..")"..((#Selection>0 and (" ("..#Selection..")")) or ""))
+end
+
+local function sel2()
+  local findSpace=message:find(" ")
+  Selection={}
+  if not findSpace then
+    x1=nil
+    y1=nil
+    z1=nil
+    x2=nil
+    y2=nil
+    z2=nil
+  else
+    if message:sub(findSpace+1)=="1" then
+      x1=nil
+      y1=nil
+      z1=nil
+    elseif message:sub(findSpace+1)=="2" then
+      x2=nil
+      y2=nil
+      z2=nil
+    end
+  end
+  sendChat("Selection cleared.")
+end
+
+local helpText={
+  pos1="Selects the first position using the block the player is standing on.",
+  pos2="Selects the second position using the block the player is standing on.",
+  hpos1="Selects the first position using the block the player is looking at.",
+  hpos2="Selects the second position using the block the player is looking at.",
+  sel="Clears the selection, with an argument specifying which position to clear, or \"vert\", to expand the selection to Y 0-256.",
+  set="Sets all blocks in the selection to the given block(s) with the given proportion(s).",
+  replace="Replaces all block(s) in the first argument with the block(s) in the second with their given proportion(s).",
+  expand="Expands the selection in the given direction, or in the direction the player is looking if not specified.",
+  contract="Contracts the selection in the given direction, or in the direction the player is looking if not specified.",
+  inset="Shrinks the selection by one block in all directions.",
+  outset="Expands the selection by one block in all directions.",
+  shift="Moves the selection by one block in all directions.",
+  chunk="Changes the selection to the chunk the player is in.",
+  naturalize="Makes the terrain look more natural.",
+  copy="Copies the blocks in the selection into the clipboard.",
+  paste="Puts the current clipboard in the world. -a does not paste air blocks, -ao pastes it at the origin of the clipboard.",
+  load="Loads a saved clipboard.",
+  move="Moves the blocks in the selection in the given direction, or in the direction the player is looking if not specified.",
+  cut="Copies all blocks in the selection into the clipboard, then sets them to air.",
+  stack="Repeats the blocks in the selection.",
+  terminate="Ends the program.",
+  refresh="Re-runs all the files other than WE_Core, allowing all changes to take effect.",
+  save="Saves a clipboard to a file.",
+  reboot="Reboots the computer.",
+  blockpatterns='A number of commands that take a "block" parameter really take a pattern. Rather than set one single block, a pattern allows you to set more complex patterns. For example, you can set a pattern where each block has a 10% chance of being brick and a 90% chance of being smooth stone.\nBlock probability pattern is specified with a list of block types (and support block:meta) with their respective probability.\nExample: Setting all blocks to a random pattern using a list with percentages (Which do not need to add to 100):\r"set 5%planks:3,95%dirt"\nFor a truly random pattern, no probability percentage is needed.\nExample: Setting all blocks to a random pattern using a list without percentages\n"set obsidian,stone"',
+}
+
+local commandSyntax={
+  pos1="pos1 (Takes no arguments)",
+  pos2="pos2 (Takes no arguments)",
+  hpos1="hpos1 (Takes no arguments)",
+  hpos2="hpos2 (Takes no arguments)",
+  sel="sel [1/2/vert]",
+  set="set block[:meta][,...] (See \"help BlockPatterns\" for more information)",
+  replace="replace block1[:meta1][,...] block2[:meta2][,...] (See \"help BlockPatterns\" for more information)",
+  expand="expand (amount) [direction] (Direction defaults to \"self\")",
+  contract="contract (amount) [direction] (Direction defaults to \"self\")",
+  inset="inset (amount)",
+  outset="outset (amount)",
+  shift="shift (amount) [direction] (Direction defaults to \"self\")",
+  chunk="chunk (Takes no arguments)",
+  naturalize="naturalize (Takes no arguments)",
+  copy="copy (Takes no arguments)",
+  paste="paste [-a] [-ao]",
+  load="load (name)",
+  move="move (amount) [direction] (Direction defaults to \"self\")",
+  cut="cut (Takes no arguments)",
+  stack="stack (amount) [direction] (Direction defaults to \"self\")",
+  terminate="terminate (Takes no arguments)",
+  refresh="refresh (Takes no arguments)",
+  save="save (name)",
+  reboot="reboot (Takes no arguments)",
+}
+
+local iteratableHelpText={} --These are used to traverse the table in order. It contains the keys alphabetically.
+for k in pairs(helpText) do table.insert(iteratableHelpText,k) end
+table.sort(iteratableHelpText)
+
+local function help(command)
+  command=(command~=nil and command~="") and command or 1
+  local commandsPerPage=8
+  local numPages=math.ceil(#iteratableHelpText/commandsPerPage)
+  if tonumber(command) then
+    local pageNum=math.min(tonumber(command),numPages)
+    sendChat("Run \"help (commandname)\" for a description of the command and its syntax.")
+    for i=1,commandsPerPage do
+      local index=i+(pageNum-1)*commandsPerPage
+      if index>#iteratableHelpText then
+        break
+      end
+      sendChat(iteratableHelpText[index]..((iteratableHelpText[index]~="blockpatterns" and (" - "..helpText[iteratableHelpText[index]])) or ""))
+    end
+    sendChat("Page "..command.."/"..numPages)
+  elseif helpText[command] then
+    sendChat(command.." - "..helpText[command])
+    if commandSyntax[command] then
+      sendChat("Syntax: "..commandSyntax[command])
+    end
+  else
+    sendChat("Command \""..command.."\" not found.")
+  end
+end
+
+--Main program loop
+local firstRun=hasChatBox
+while true do
+  if not firstRun then
+    username,message=getChat()
+  else
+    firstRun=false
+  end
+  pl=p and p.getPlayerByName(username) --Short circuit if p is nil.
+  ent=pl and pl.asEntity()
+  if ent then
+    px,py,pz=ent.getPosition()
+  end
+  OriginalMessage=message
+  message=message:lower() --Make it case-insensitive, but keep the original just in case it's needed.
+  if message==nil then
+  elseif message=="pos1" then
+    pos1()
+  elseif message=="pos2" then
+    pos2()
+  elseif message=="hpos1" then
+    hpos1()
+  elseif message=="hpos2" then --See hpos1!
+    hpos2()
+  elseif message:sub(1,3)=="sel" then --Clear the selection
+    sel2()
+  elseif message:sub(1,3)=="set" then
+    if #Selection>0 then
+      SeparateString()
+      ConvertName()
+      sel.set()
+    else
+      sendChat("Set a position first with pos1 and pos2!")
+    end
+  elseif message:sub(1,7)=="replace" then
+    if #Selection>0 then
+      SeparateString()
+      ConvertName()
+      sel.replace()
+    else
+      sendChat("Set a position first with pos1 and pos2!")
+    end
+  elseif message:sub(1,6)=="expand" then
+    if #Selection>0 then
+      cuboid.expand()
+    else
+      sendChat("Set a position first with pos1 and pos2!")
+    end
+  elseif message:sub(1,8)=="contract" then
+    if #Selection>0 then
+      cuboid.contract()
+    else
+      sendChat("Set a position first with pos1 and pos2!")
+    end
+  elseif message:sub(1,5)=="inset" then
+    if #Selection>0 then
+      cuboid.inset()
+    else
+      sendChat("Set a position first with pos1 and pos2!")
+    end
+  elseif message:sub(1,6)=="outset" then
+    if #Selection>0 then
+      cuboid.outset()
+    else
+      sendChat("Set a position first with pos1 and pos2!")
+    end
+  elseif message:sub(1,5)=="shift" then
+    if #Selection>0 then
+      cuboid.shift()
+    else
+      sendChat("Set a position first with pos1 and pos2!")
+    end
+  elseif message:sub(1,5)=="chunk" then
+    if #Selection>0 then
+      cuboid.chunk()
+    else
+      sendChat("Set a position first with pos1 and pos2!")
+    end
+  elseif message:sub(1,10)=="naturalize" then
+    if #Selection>0 then
+      sel.naturalize()
+    else
+      sendChat("Set a position first with pos1 and pos2!")
+    end
+  elseif message:sub(1,7)=="overlay" then
+    if #Selection>0 then
+      SeparateString()
+      ConvertName()
+      sel.overlay()
+    else
+      sendChat("Set a position first with pos1 and pos2!")
+    end
+  elseif message:sub(1,4)=="copy" and hasNBT then
+    if #Selection>0 then
+      clipboard.copy()
+    else
+      sendChat("Set a position first with pos1 and pos2!")
+    end
+  elseif message:sub(1,5)=="paste" and hasNBT then
+    clipboard.paste()
+  elseif message:sub(1,4)=="move" and hasNBT then
+    clipboard.move()
+  elseif message:sub(1,3)=="cut" and hasNBT then
+    clipboard.cut()
+  elseif message:sub(1,5)=="stack" and hasNBT then
+    clipboard.stack()
+  elseif message:sub(1,9)=="terminate" then
+    break
+  elseif message:sub(1,7)=="refresh" then
+    shell.run(APIPath)
+    shell.run(CuboidPath)
+    shell.run(SelPath)
+    if fs.exists(ClipboardPath) then
+      hasNBT=true
+      shell.run(ClipboardPath)
+    else
+      hasNBT=false
+    end
+  elseif message:sub(1,4)=="save" and hasNBT then
+    clipboard.save()
+  elseif message:sub(1,6)=="reboot" then
+    os.reboot()
+  elseif message:sub(1,4)=="load" and hasNBT then
+    clipboard.load()
+  elseif message:sub(1,4)=="help" then
+    help(message:sub(6))
+  elseif message=="endchatspam" then
+    sendChat("Spam ended.")
+    commands.exec("gamerule commandBlockOutput false")
+  end
+end
+--Program(s) made by moomoomoo309 and exlted--

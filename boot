@@ -12,6 +12,8 @@ local commands = {
  
  
 }
+local side = "back"
+
 
  term.clear()
  term.setCursorPos(1,1)

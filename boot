@@ -25,7 +25,7 @@ local commands = {
  
  
 while true do
- 
+term.setTextColor(colors.yellow) 
  write("root@:")
  local input = read()
 

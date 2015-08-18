@@ -1,4 +1,5 @@
  term.setTextColor(colors.pink)
  print [[ You can find all the commands in this section.
  help - This command bring up this section.
- programs - Gives you a list of the programs installed as Commands within Arc OS. ]]
+ programs - Gives you a list of the programs installed as Commands within Arc OS. 
+ redstone - brings up the commands for the redstone output]]

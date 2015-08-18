@@ -5,7 +5,6 @@ term.clear()
 
 uname = "root"
 pword = "123456"
-local side = "left"
 
 function os.pullEvent()
 local event, p1, p2, p3, p4, p5 = os.pullEventRaw()

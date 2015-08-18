@@ -1,5 +1,5 @@
 local commands = {
-// ["light"] = "programs/light",
+ ["light"] = "programs/light",
  ["logout"] = "startup",
  ["worldedit"] = "programs/WE_Core",
  ["programs"] = "lib/programs",

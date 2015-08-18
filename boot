@@ -8,6 +8,7 @@ local commands = {
  ["shell"] = "rom/programs/shell",
  ["on"] = "lib/on",
  ["off"] = "lib/off",
+ ["light"] = "lib/light",
  
  
 }

@@ -1,5 +1,4 @@
 local commands = {
-<-- ["light"] = "programs/light",
  ["logout"] = "startup",
  ["worldedit"] = "programs/WE_Core",
  ["programs"] = "lib/programs",
@@ -7,7 +6,7 @@ local commands = {
  ["credits"] = "lib/credits",
  ["stargate"] = "programs/Lanteacraft_Dialer",
  ["shell"] = "rom/programs/shell",
- ["on" = "lib/on",
+ ["on"] = "lib/on",
  ["off"] = "lib/off",
  
  

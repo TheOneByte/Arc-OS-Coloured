@@ -21,11 +21,11 @@ local commands = {
 
  term.setTextColor(colors.yellow)
  print("Type help for assitance using Arc OS")
- print("Credits to the available programs can be accessed by typing 'credits'")
+ print("Credits to the available programs can be accessed by typing credits")
  
  
 while true do
-term.setTextColor(colors.yellow) 
+ term.setTextColor(colors.yellow) 
  write("root@:")
  local input = read()
 
